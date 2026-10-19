@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MathsNMe
 
-## Getting Started
+A Next.js learning platform for Vedic Maths, IB Mathematics, and structured practice.
 
-First, run the development server:
+## Included
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Responsive white-and-gold homepage, learning roadmap, and replayable HCF demo.
+- Firebase email/password authentication and student registration.
+- Student dashboard and topic interface.
+- Admin student search, filters, and review notes.
+
+Some topic, level, worksheet, and pre-test routes remain starter placeholders. Automated weekly reports and diagnostic delivery are not implemented.
+
+## Local setup
+
+1. Install dependencies with `npm ci`.
+2. Copy `.env.example` to `.env.local` and fill in your Firebase web app configuration.
+3. Configure Firebase Authentication and Firestore. See [admin setup](docs/ADMIN_SETUP.md) for admin access and security-rule setup.
+4. Run `npm run dev` and open http://localhost:3000.
+
+Never commit `.env.local`, service-account credentials, or passwords. Firebase web configuration is public client configuration; Firestore rules control data access.
+
+## Checks
+
+```sh
+npm run lint
+node --experimental-strip-types --test tests/admin-students.test.mjs
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If your environment restricts Turbopack worker processes, use `npm run build -- --webpack`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set the environment variables in your hosting environment before building. Review and validate `firestore.rules` before publishing them. Production startup uses `npm run build` followed by `npm start` on a compatible Node.js host.

@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// users/{uid}: registration profile from signup. Role, placement, consent,
+// and creation date cannot be changed by students. Admin access is read-only.
+// admins/{uid}: { active: bool }, provisioned through Firebase Console only.
+// adminReviews/{studentUid}: { notes: string (<=5000), reviewed: bool,
+// reviewedBy: auth UID, updatedAt: server timestamp }. Admin-only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    }
+    function validStudent(data) {
+      return data.keys().hasAll(['studentName', 'grade', 'board', 'country', 'state', 'city',
+          'guardianEmail', 'phone', 'countryCode', 'dialCode', 'role', 'currentLevel',
+          'pretestCompleted', 'policyAccepted', 'policyAcceptedAt', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentName', 'grade', 'board', 'country', 'state', 'city',
+          'guardianEmail', 'phone', 'countryCode', 'dialCode', 'role', 'currentLevel',
+          'pretestCompleted', 'policyAccepted', 'policyAcceptedAt', 'createdAt', 'updatedAt'])
+        && data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 200
+        && data.grade is int && data.grade >= 1 && data.grade <= 12
+        && data.board is string && data.board.size() > 0 && data.board.size() <= 100
+        && data.country is string && data.country.size() > 0 && data.country.size() <= 100
+        && data.state is string && data.state.size() > 0 && data.state.size() <= 200
+        && data.city is string && data.city.size() > 0 && data.city.size() <= 200
+        && data.guardianEmail is string && data.guardianEmail.size() <= 320
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 40
+        && data.countryCode is string && data.countryCode.size() <= 5
+        && data.dialCode is string && data.dialCode.size() <= 20
+        && data.role == 'student'
+        && data.currentLevel is int && data.currentLevel >= 0
+        && data.pretestCompleted is bool && data.policyAccepted == true
+        && data.policyAcceptedAt is timestamp && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+    match /admins/{uid} {
+      allow get: if isOwner(uid);
+      allow list, create, update, delete: if false;
+    }
+    match /users/{studentId} {
+      allow create: if isOwner(studentId) && validStudent(request.resource.data)
+        && request.resource.data.guardianEmail == request.auth.token.email
+        && request.resource.data.currentLevel == 0
+        && request.resource.data.pretestCompleted == false
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.policyAcceptedAt == request.time;
+      allow get: if isOwner(studentId) || isAdmin();
+      allow list: if isAdmin();
+      allow update: if isOwner(studentId) && validStudent(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'studentName', 'grade', 'board', 'country', 'state', 'city',
+          'phone', 'countryCode', 'dialCode', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+    function validReview(studentId) {
+      let data = request.resource.data;
+      return exists(/databases/$(database)/documents/users/$(studentId))
+        && data.keys().hasAll(['notes', 'reviewed', 'reviewedBy', 'updatedAt'])
+        && data.keys().hasOnly(['notes', 'reviewed', 'reviewedBy', 'updatedAt'])
+        && data.notes is string && data.notes.size() <= 5000
+        && data.reviewed is bool && data.reviewedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+    match /adminReviews/{studentId} {
+      allow get: if isAdmin();
+      allow create, update: if isAdmin() && validReview(studentId);
+      allow list, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
