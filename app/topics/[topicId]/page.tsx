@@ -2,7 +2,7 @@
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import Image from "next/image";
+import BrandLogo from "@/components/common/BrandLogo";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -187,8 +187,7 @@ export default function TopicPage() {
             </Link>
           </div>
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="MathsNMe" width={42} height={42} priority className="rounded-xl" />
-            <span className="hidden text-xl font-black tracking-[-0.04em] sm:inline">MathsNMe</span>
+            <BrandLogo className="w-28 sm:w-44" />
           </Link>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-[#fff9e8] px-3 py-2 text-sm font-black text-[#8a6500]" title="Experience points">
@@ -256,8 +255,7 @@ export default function TopicPage() {
       >
         <div className="mb-8 flex items-center justify-between border-b border-[#eee7d5] pb-5">
           <Link href="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-            <Image src="/logo.png" alt="MathsNMe" width={42} height={42} className="rounded-xl" />
-            <span className="text-xl font-black tracking-[-0.04em]">MathsNMe</span>
+            <BrandLogo className="w-28 sm:w-44" />
           </Link>
           <button type="button" onClick={() => setMenuOpen(false)} className="rounded-xl border border-[#e8dfc8] p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950" aria-label="Close navigation menu">
             <X size={20} />

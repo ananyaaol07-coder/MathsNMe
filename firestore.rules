@@ -21,21 +21,21 @@ service cloud.firestore {
           'pretestCompleted', 'policyAccepted', 'policyAcceptedAt', 'createdAt', 'updatedAt'])
         && data.keys().hasOnly(['studentName', 'grade', 'board', 'country', 'state', 'city',
           'guardianEmail', 'phone', 'countryCode', 'dialCode', 'role', 'currentLevel',
-          'pretestCompleted', 'policyAccepted', 'policyAcceptedAt', 'createdAt', 'updatedAt'])
+          'pretestCompleted', 'policyAccepted', 'policyAcceptedAt', 'createdAt', 'updatedAt', 'enrollmentId'])
         && data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 200
         && data.grade is int && data.grade >= 1 && data.grade <= 12
         && data.board is string && data.board.size() > 0 && data.board.size() <= 100
         && data.country is string && data.country.size() > 0 && data.country.size() <= 100
         && data.state is string && data.state.size() > 0 && data.state.size() <= 200
-        && data.city is string && data.city.size() > 0 && data.city.size() <= 200
+        && data.city is string && data.city.size() <= 200
         && data.guardianEmail is string && data.guardianEmail.size() <= 320
         && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 40
         && data.countryCode is string && data.countryCode.size() <= 5
         && data.dialCode is string && data.dialCode.size() <= 20
         && data.role == 'student'
         && data.currentLevel is int && data.currentLevel >= 0
-        && data.pretestCompleted is bool && data.policyAccepted == true
-        && data.policyAcceptedAt is timestamp && data.createdAt is timestamp
+        && data.pretestCompleted is bool && data.policyAccepted is bool
+        && (data.policyAcceptedAt is timestamp || (data.policyAccepted == false && data.policyAcceptedAt == null)) && data.createdAt is timestamp
         && data.updatedAt == request.time;
     }
     match /admins/{uid} {
@@ -43,17 +43,13 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
     match /users/{studentId} {
-      allow create: if isOwner(studentId) && validStudent(request.resource.data)
-        && request.resource.data.guardianEmail == request.auth.token.email
-        && request.resource.data.currentLevel == 0
-        && request.resource.data.pretestCompleted == false
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.policyAcceptedAt == request.time;
+      // New learning profiles are provisioned by the server after verified payment.
+      allow create: if false;
       allow get: if isOwner(studentId) || isAdmin();
       allow list: if isAdmin();
       allow update: if isOwner(studentId) && validStudent(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'studentName', 'grade', 'board', 'country', 'state', 'city',
+          'studentName', 'board', 'country', 'state', 'city',
           'phone', 'countryCode', 'dialCode', 'updatedAt'
         ]);
       allow delete: if false;

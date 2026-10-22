@@ -29,9 +29,6 @@ export function LearningApproach() {
           <Link href="#roadmap" className="mt-8 inline-flex items-center gap-2 rounded-xl border border-[#E7C45A] bg-white px-7 py-4 font-semibold text-black shadow-lg transition hover:bg-[#D4AF37]">
             See the Learning Roadmap <ArrowRight size={18} className="shrink-0" />
           </Link>
-          <p className="mt-6 text-sm leading-6 text-slate-600">
-            Created by <span className="font-semibold text-[#B8860B]">Ramesh Kolluru</span>, PhD in Statistics, with around 20 years of teaching Vedic Mathematics.
-          </p>
         </div>
         <div className="min-w-0"><ShortcutDemo /></div>
       </div>

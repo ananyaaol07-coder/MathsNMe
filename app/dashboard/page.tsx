@@ -3,7 +3,8 @@
 import { FirebaseError } from "firebase/app";
 import { onAuthStateChanged, sendEmailVerification, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import Image from "next/image";
+import { CommitmentCard, usePractice } from "@/components/practice/PracticeProvider";
+import BrandLogo from "@/components/common/BrandLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -44,7 +45,7 @@ interface StudentProfile {
 const navigation = [
   { label: "Overview", icon: LayoutDashboard, href: "/dashboard", active: true },
   { label: "Vedic Mathematics", icon: Calculator, href: "/topics/vedic-maths/pretest" },
-  { label: "IB Mathematics", icon: Brain, href: "/topics/ib-mathematics/pretest" },
+  { label: "IB Mathematics", icon: Brain, href: "/topics/ib-mathematics" },
   { label: "Olympiad", icon: Trophy, href: "/dashboard", locked: true },
   { label: "Progress", icon: BarChart3, href: "/dashboard#progress" },
   { label: "Reports", icon: FileChartColumn, href: "/dashboard#reports" },
@@ -65,6 +66,7 @@ function DashboardLoader() {
 }
 
 export default function DashboardPage() {
+  const { commitment } = usePractice();
   const router = useRouter();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -211,15 +213,14 @@ export default function DashboardPage() {
               <Menu size={22} />
             </button>
             <Link href="/" className="flex items-center gap-3">
-              <Image src="/logo.png" alt="MathsNMe" width={42} height={42} priority className="rounded-xl" />
-              <span className="hidden text-2xl font-black tracking-[-0.04em] sm:inline">MathsNMe</span>
+              <BrandLogo className="w-28 sm:w-44" />
             </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-white px-3 py-2 text-sm font-black text-slate-700 shadow-sm" title="Daily learning streak">
               <Zap size={16} className="text-[#D4AF37]" fill="currentColor" />
-              <span className="hidden sm:inline">0 day</span>
+              <span>{commitment.streak}<span className="hidden sm:inline"> day</span></span>
               <span>streak</span>
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-[#fff9e8] px-3 py-2 text-sm font-black text-[#8a6500]" title="Experience points">
@@ -228,7 +229,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-white px-3 py-2 text-sm font-black text-slate-700" title="MathsNMe coins">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] font-black text-white">M</span>
-              <span>0</span>
+              <span>{commitment.coins}</span>
             </div>
             <div className="relative" ref={profileMenuRef}>
               <button
@@ -295,8 +296,7 @@ export default function DashboardPage() {
       >
           <div className="mb-8 flex items-center justify-between border-b border-[#eee7d5] pb-5">
             <Link href="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-              <Image src="/logo.png" alt="MathsNMe" width={42} height={42} className="rounded-xl" />
-              <span className="text-xl font-black tracking-[-0.04em]">MathsNMe</span>
+              <BrandLogo className="w-28 sm:w-44" />
             </Link>
             <button
               type="button"
@@ -376,6 +376,8 @@ export default function DashboardPage() {
             </div>
           </section>
 
+          <CommitmentCard />
+
           <section className="mt-8 grid gap-5 md:grid-cols-3" aria-label="Mathematics programs">
             <Link
               href="/topics/vedic-maths"
@@ -393,16 +395,16 @@ export default function DashboardPage() {
 
             <Link
               href="/topics/ib-mathematics"
-              className="group flex items-center gap-4 rounded-3xl border border-blue-100 bg-white/95 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
+              className="group flex items-center gap-4 rounded-3xl border border-[#e8d8a8] bg-white/95 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:border-[#D4AF37] hover:shadow-lg"
             >
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fff1b8] text-[#b37d00]">
                 <Brain size={27} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-lg font-black text-slate-950">IB Mathematics</span>
                 <span className="mt-1 block text-sm text-slate-500">Conceptual problem solving</span>
               </span>
-              <ArrowRight size={20} className="shrink-0 text-blue-600 transition group-hover:translate-x-1" />
+              <ArrowRight size={20} className="shrink-0 text-[#B8860B] transition group-hover:translate-x-1" />
             </Link>
 
             <div
@@ -427,7 +429,7 @@ export default function DashboardPage() {
             {[
               { label: "Current level", value: profile.currentLevel || "Not set", icon: Trophy, color: "bg-[#fff2c2] text-[#b37d00]" },
               { label: "Weekly practice", value: "0 / 60 min", icon: Clock3, color: "bg-blue-100 text-blue-600" },
-              { label: "Worksheets done", value: "0", icon: FileText, color: "bg-green-100 text-green-600" },
+              { label: "Worksheets done", value: String(commitment.worksheetsDone), icon: FileText, color: "bg-green-100 text-green-600" },
               { label: "Average accuracy", value: "—", icon: BarChart3, color: "bg-purple-100 text-purple-600" },
             ].map(({ label, value, icon: Icon, color }) => (
               <article key={label} className="rounded-2xl border border-[#e8dfc8] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
@@ -477,7 +479,7 @@ export default function DashboardPage() {
                 <span>0%</span>
               </div>
               <p className="mt-6 rounded-2xl bg-[#faf8f2] p-4 text-xs leading-5 text-slate-600">
-                Complete practice across 2–3 sessions each week to build a consistent learning habit.
+                Build your daily habit by completing a worksheet in your committed time window.
               </p>
             </article>
           </section>
