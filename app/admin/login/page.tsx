@@ -1,5 +1,7 @@
 "use client";
 
+import BrandLogo from "@/components/common/BrandLogo";
+
 import { FirebaseError } from "firebase/app";
 import { browserSessionPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDocFromServer } from "firebase/firestore";
@@ -43,7 +45,7 @@ export default function AdminLogin() {
   }
   return <div className="flex min-h-[85vh] items-center justify-center bg-gradient-to-br from-white to-[#fff4d7] px-6 py-16">
     <section className="w-full max-w-md rounded-[2rem] border border-[#eadfb9] bg-white p-8 shadow-xl sm:p-10">
-      <Link href="/" className="text-xl font-black text-slate-950">MathsNMe<span className="text-[#a47a10]">.</span></Link>
+      <Link href="/" className="text-xl font-black text-slate-950"><BrandLogo priority /></Link>
       <div className="mt-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff2c2] text-[#9a7200]"><ShieldCheck /></div>
       <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em] text-[#9a7200]">Administration</p>
       <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Welcome back, Admin</h1>

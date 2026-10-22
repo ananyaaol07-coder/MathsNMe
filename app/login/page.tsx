@@ -5,7 +5,7 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import Image from "next/image";
+import BrandLogo from "@/components/common/BrandLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -136,17 +136,7 @@ export default function LoginPage() {
       <header className="relative border-b border-[#eadfb9]/80 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3" aria-label="MathsNMe home">
-            <Image
-              src="/logo.png"
-              alt="MathsNMe logo"
-              width={44}
-              height={44}
-              priority
-              className="rounded-2xl shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
-            />
-            <span className="text-2xl font-black tracking-[-0.03em] text-slate-900">
-              MathsNMe
-            </span>
+            <BrandLogo priority />
           </Link>
 
           <div>

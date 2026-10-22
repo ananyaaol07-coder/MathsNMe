@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   FileText,
@@ -14,7 +17,6 @@ const cards = [
     icon: FileText,
     color: "bg-yellow-100 text-yellow-600",
     position: "top-23 -left-24",
-    width: "w-[320px]",
     layer: "z-30",
   },
 
@@ -24,7 +26,6 @@ const cards = [
     icon: Brain,
     color: "bg-blue-100 text-blue-600",
     position: "top-20 -right-23",
-    width: "w-[340px]",
     layer: "z-10",
     success: true,
   },
@@ -35,7 +36,6 @@ const cards = [
     icon: BarChart3,
     color: "bg-green-100 text-green-600",
     position: "bottom-22 -left-10",
-    width: "w-[300px]",
     layer: "z-10",
   },
 
@@ -45,15 +45,30 @@ const cards = [
     icon: Trophy,
     color: "bg-yellow-100 text-yellow-600",
     position: "bottom-23 -right-20",
-    width: "w-[320px]",
     layer: "z-30",
   },
 ];
 
 export default function HeroVisual() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // The canvas and overhanging cards span 668px; keep a small edge margin.
+    const observer = new ResizeObserver(([entry]) => {
+      const scale = Math.min(0.85, entry.contentRect.width / 688);
+      container.style.setProperty("--visual-scale", String(scale));
+      container.style.setProperty("--visual-height", `${580 * scale}px`);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="relative flex h-[520px] items-start justify-center sm:h-[560px] lg:h-[580px]">
-      <div className="relative flex h-[520px] w-full max-w-[620px] scale-[0.85] -translate-y-12 items-center justify-center overflow-visible sm:h-[560px] sm:-translate-y-16 lg:h-[580px] lg:-translate-y-20">
+    <div ref={containerRef} className="relative -mx-6 flex h-[var(--visual-height,240px)] w-[calc(100%+3rem)] min-w-0 items-start justify-center sm:mx-0 sm:w-full lg:h-[580px]">
+      <div className="relative flex h-[580px] w-[480px] shrink-0 origin-top scale-[var(--visual-scale,0.35)] items-center justify-center overflow-visible lg:w-full lg:max-w-[620px] lg:origin-center lg:scale-[0.85] lg:-translate-y-20">
 
         {/* Glow */}
         <div className="absolute h-[420px] w-[420px] rounded-full bg-[#FFD84D]/30 blur-[80px]" />
@@ -102,18 +117,11 @@ export default function HeroVisual() {
 
         {/* Logo */}
         <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
-          <Image
-            src="/logo.png"
-            alt="MathsNMe"
-            width={260}
-            height={260}
-            priority
-            className="drop-shadow-[0_20px_40px_rgba(212,175,55,0.45)]"
-          />
+          <Image src="/mathsnme-hero-original.png" alt="MathsNMe" width={260} height={260} priority className="hero-float hero-float-logo drop-shadow-[0_20px_40px_rgba(212,175,55,0.45)]" />
         </div>
 
         {/* Floating Cards */}
-        {cards.map((card) => {
+        {cards.map((card, index) => {
           const Icon = card.icon;
 
           return (
@@ -123,14 +131,12 @@ export default function HeroVisual() {
                 absolute
                 ${card.position}
                 ${card.layer}
-                transition-all
-                duration-300
-                hover:-translate-y-2
-                hover:scale-105
               `}
             >
               <div
+                style={{ animationDelay: `${-0.8 - index * 0.9}s` }}
                 className="
+                hero-float
                 flex
                 items-center
                 gap-4
@@ -141,7 +147,6 @@ export default function HeroVisual() {
                 shadow-2xl
                 border
                 border-white
-                ${card.width}
                 "
               >
                 {/* Icon */}
@@ -163,7 +168,7 @@ export default function HeroVisual() {
                 {/* Text */}
 
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold leading-tight text-slate-800 sm:text-xl">
+                  <h3 className="text-lg font-bold leading-tight text-slate-800 text-xl">
                     {card.title}
                   </h3>
 

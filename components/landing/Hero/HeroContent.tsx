@@ -4,7 +4,7 @@ import HeroStats from "./HeroStats";
 
 export default function HeroContent() {
   return (
-    <div className="max-w-2xl">
+    <div className="min-w-0 max-w-2xl">
 
       {/* Badge */}
 
