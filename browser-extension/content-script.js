@@ -31,6 +31,17 @@
     }).filter(question => question.prompt);
   }
 
+  function parseLearningPath(value) {
+    const find = (pattern, fallback) => clean(value.match(pattern)?.[1] || fallback);
+    const grade = number(value.match(/\b(?:grade|class)\s*(\d{1,2})\b/i)?.[1]);
+    const moduleTitle = find(/\b(module\s*\d+)\b/i, "Module not set");
+    const chapterTitle = find(/\b(chapter\s*\d+)\b/i, "Chapter not set");
+    const exerciseTitle = find(/\b(exercise\s*\d+)\b/i, "Exercise not set");
+    const activityTitle = find(/\b(worksheet\s*\d+|pre[ -]?test|post[ -]?test|chapter[ -]?test)\b/i, "Activity not set");
+    const slug = title => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return { grade: grade >= 3 && grade <= 12 ? grade : null, moduleId: slug(moduleTitle), moduleTitle, chapterId: slug(chapterTitle), chapterTitle, exerciseId: slug(exerciseTitle), exerciseTitle, activityId: slug(activityTitle), activityTitle };
+  }
+
   function capture() {
     const body = text();
     if (body.length < 80 || !/(accuracy|correct answers?|score|performance)/i.test(body) || !/(completed|summary|result|accuracy)/i.test(body)) return;
@@ -54,6 +65,7 @@
       bestStreak: pick(body, [/(?:best\s*)?streak\s*[:\-]?\s*(\d+)/i]),
       questions: parseQuestions(),
       sourceUrl: location.href,
+      learningPath: parseLearningPath(`${quizTitle} ${body.slice(0, 1200)}`),
     };
     const fingerprint = `${result.quizTitle}|${result.accuracy}|${result.correct}|${result.total}|${location.pathname}`;
     if (sessionStorage.getItem("mathsnme-wayground-capture") === fingerprint) return;

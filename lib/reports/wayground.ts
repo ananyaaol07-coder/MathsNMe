@@ -7,6 +7,18 @@ export type WaygroundQuestion = {
   timeSeconds: number | null;
 };
 
+export type ReportLocation = {
+  grade: number | null;
+  moduleId: string;
+  moduleTitle: string;
+  chapterId: string;
+  chapterTitle: string;
+  exerciseId: string;
+  exerciseTitle: string;
+  activityId: string;
+  activityTitle: string;
+};
+
 export type WaygroundReportInput = {
   source: "wayground-extension";
   quizTitle: string;
@@ -20,6 +32,7 @@ export type WaygroundReportInput = {
   bestStreak: number | null;
   questions: WaygroundQuestion[];
   sourceUrl: string;
+  learningPath: ReportLocation;
 };
 
 function numberIn(value: unknown, min: number, max: number, nullable = false) {
@@ -32,6 +45,30 @@ function shortText(value: unknown, fallback: string, max: number) {
   if (typeof value !== "string") return fallback;
   const clean = value.replace(/\s+/g, " ").trim();
   return clean ? clean.slice(0, max) : fallback;
+}
+
+function slug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "unknown";
+}
+
+function locationPart(data: Record<string, unknown>, key: string, fallback: string) {
+  return shortText(data[key], fallback, 100);
+}
+
+function readLocation(value: unknown): ReportLocation {
+  const data = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const grade = data.grade === null || data.grade === undefined ? null : Math.round(numberIn(data.grade, 3, 12) as number);
+  const moduleTitle = locationPart(data, "moduleTitle", "Module not set");
+  const chapterTitle = locationPart(data, "chapterTitle", "Chapter not set");
+  const exerciseTitle = locationPart(data, "exerciseTitle", "Exercise not set");
+  const activityTitle = locationPart(data, "activityTitle", "Activity not set");
+  return {
+    grade,
+    moduleId: locationPart(data, "moduleId", slug(moduleTitle)), moduleTitle,
+    chapterId: locationPart(data, "chapterId", slug(chapterTitle)), chapterTitle,
+    exerciseId: locationPart(data, "exerciseId", slug(exerciseTitle)), exerciseTitle,
+    activityId: locationPart(data, "activityId", slug(activityTitle)), activityTitle,
+  };
 }
 
 export function readWaygroundReport(value: unknown): WaygroundReportInput {
@@ -65,5 +102,6 @@ export function readWaygroundReport(value: unknown): WaygroundReportInput {
       };
     }),
     sourceUrl: shortText(data.sourceUrl, "https://wayground.com", 1000),
+    learningPath: readLocation(data.learningPath),
   };
 }

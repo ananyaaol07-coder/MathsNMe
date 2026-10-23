@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const { uid, db } = await requireLearner(request);
     const report = readWaygroundReport(await request.json());
     const fingerprint = createHash("sha256")
-      .update(`${uid}|${report.quizTitle}|${report.capturedAt}|${report.total}|${report.correct}|${report.score ?? ""}`)
+      .update(`${uid}|${report.learningPath.grade}|${report.learningPath.activityId}|${report.quizTitle}|${report.capturedAt}|${report.total}|${report.correct}|${report.score ?? ""}`)
       .digest("hex").slice(0, 32);
     const ref = db.doc(`studentReports/${uid}/items/${fingerprint}`);
     await ref.set({ ...report, importedAt: FieldValue.serverTimestamp() }, { merge: false });
