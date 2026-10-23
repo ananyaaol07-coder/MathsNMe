@@ -10,11 +10,11 @@ export async function POST(request: Request) {
   try {
     const { db, uid, profile } = learner, body = await request.json();
     if (body.action === "start") {
-      const { grade, path, modules } = await ibContext(db, uid, Number(profile.grade), body.grade, body.path);
+      const { grade, path, modules, options } = await ibContext(db, uid, Number(profile.grade), body.grade, body.path);
       const progressRef = db.doc(`ibProgress/${uid}/grades/${grade}`), sessionRef = db.collection("ibSessions").doc();
       return Response.json(await db.runTransaction(async tx => {
         const progress = ((await tx.get(progressRef)).data()?.nodes || {}) as Progress;
-        const { view, activity } = requireActivity(modules, path, progress, body.activity);
+        const { view, activity } = requireActivity(modules, path, progress, body.activity, options);
         const nodeKey = path.join("/");
         const activeId = progress[nodeKey]?.activeTestSession;
         if (!activity.startsWith("worksheet-") && activeId) {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const sessionRef = db.doc(`ibSessions/${body.sessionId}`);
     const session = (await sessionRef.get()).data();
     if (!session || session.uid !== uid) throw new Error("Session not found.");
-    const { grade, path, modules } = await ibContext(db, uid, Number(profile.grade), session.grade, session.path);
+    const { grade, path, modules, options } = await ibContext(db, uid, Number(profile.grade), session.grade, session.path);
     const progressRef = db.doc(`ibProgress/${uid}/grades/${grade}`), commitmentRef = db.doc(`practiceCommitments/${uid}`);
     const result = await db.runTransaction(async tx => {
       const saved = (await tx.get(sessionRef)).data()!;
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       const progress = ((await tx.get(progressRef)).data()?.nodes || {}) as Progress;
       const commitment = (await tx.get(commitmentRef)).data() as Commitment | undefined;
       if (saved.version !== progressVersion(path, progress)) throw new Error("Your progress changed in another session. Start this activity again.");
-      const { view, activity } = requireActivity(modules, path, progress, saved.activity);
+      const { view, activity } = requireActivity(modules, path, progress, saved.activity, options);
       const content = readActivity({ ...saved.content, published: true }, activity, view.children.map(child => child.id));
       const now = Date.now(), seconds = (now - saved.startedAt) / 1000;
       if (saved.activity.startsWith("worksheet-") && seconds > 86400) throw new Error("Session expired. Start again.");
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       const earned = content.questions.reduce((sum, q) => sum + (gradeWorksheet([q], { [q.id]: graded.answers[q.id] }).correct ? q.points : 0), 0);
       const score = earned / marks * 100, accuracy = graded.correct / graded.total * 100;
       const passed = content.criteria ? passesTest(content.criteria, score, accuracy, seconds) : true;
-      const nodes = applyActivity(modules, path, progress, activity, passed);
+      const nodes = applyActivity(modules, path, progress, activity, passed, options);
       let bonus = 0;
       if (activity.startsWith("worksheet-")) {
         if (!commitment) throw new Error("Set your daily practice commitment first.");

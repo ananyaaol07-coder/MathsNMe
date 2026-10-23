@@ -4,6 +4,7 @@ import { FirebaseError } from "firebase/app";
 import { onAuthStateChanged, sendEmailVerification, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { CommitmentCard, usePractice } from "@/components/practice/PracticeProvider";
+import StudentMenu from "@/components/layout/StudentMenu";
 import BrandLogo from "@/components/common/BrandLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,20 +16,13 @@ import {
   Calculator,
   CircleAlert,
   Clock3,
-  CreditCard,
   FileText,
-  FileChartColumn,
-  LayoutDashboard,
   LockKeyhole,
   LogOut,
   MailCheck,
-  Menu,
-  ShoppingBag,
-  Settings,
   Sparkles,
   Trophy,
   UserRound,
-  X,
   Zap,
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
@@ -42,17 +36,7 @@ interface StudentProfile {
   role: "student";
 }
 
-const navigation = [
-  { label: "Overview", icon: LayoutDashboard, href: "/dashboard", active: true },
-  { label: "Vedic Mathematics", icon: Calculator, href: "/topics/vedic-maths/pretest" },
-  { label: "IB Mathematics", icon: Brain, href: "/topics/ib-mathematics" },
-  { label: "Olympiad", icon: Trophy, href: "/dashboard", locked: true },
-  { label: "Progress", icon: BarChart3, href: "/dashboard#progress" },
-  { label: "Reports", icon: FileChartColumn, href: "/dashboard#reports" },
-  { label: "Payments", icon: CreditCard, href: "/dashboard#payments" },
-  { label: "Shop", icon: ShoppingBag, href: "/dashboard#shop" },
-  { label: "Settings", icon: Settings, href: "/profile" },
-];
+
 
 function DashboardLoader() {
   return (
@@ -71,7 +55,6 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState("");
@@ -203,15 +186,7 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-40 border-b border-[#e8dfc8] bg-white/95 backdrop-blur-xl">
         <div className="flex min-h-[72px] items-center justify-between gap-4 px-5 py-3 lg:px-8">
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              className="rounded-xl border border-[#e8dfc8] p-2.5 text-slate-600 transition hover:border-[#D4AF37] hover:bg-[#fff8e4] hover:text-slate-950"
-              aria-label="Toggle dashboard menu"
-              aria-expanded={menuOpen}
-            >
-              <Menu size={22} />
-            </button>
+            <StudentMenu />
             <Link href="/" className="flex items-center gap-3">
               <BrandLogo className="w-28 sm:w-44" />
             </Link>
@@ -281,68 +256,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {menuOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 cursor-default bg-slate-950/35 backdrop-blur-[2px]"
-          onClick={() => setMenuOpen(false)}
-          aria-label="Close dashboard menu"
-        />
-      )}
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] flex-col border-r border-[#e8dfc8] bg-white p-5 shadow-[18px_0_55px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
-        aria-hidden={!menuOpen}
-      >
-          <div className="mb-8 flex items-center justify-between border-b border-[#eee7d5] pb-5">
-            <Link href="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-              <BrandLogo className="w-28 sm:w-44" />
-            </Link>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-xl border border-[#e8dfc8] p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
-              aria-label="Close dashboard menu"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <nav className="space-y-1.5" aria-label="Student dashboard">
-            {navigation.map(({ label, icon: Icon, href, active, locked }) =>
-              locked ? (
-                <button
-                  key={label}
-                  type="button"
-                  disabled
-                  title="Unlocks after 1 year of active learning"
-                  className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-slate-400"
-                >
-                  <Icon size={19} />
-                  <span className="flex-1">{label}</span>
-                  <LockKeyhole size={15} />
-                </button>
-              ) : (
-                <Link
-                  key={label}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${active ? "bg-[#fff4cc] text-[#8a6500]" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}
-                >
-                  <Icon size={19} />
-                  {label}
-                </Link>
-              ),
-            )}
-          </nav>
-
-          <div className="mt-auto border-t border-[#eee7d5] pt-4">
-            <button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50">
-              <LogOut size={19} />
-              Log out
-            </button>
-          </div>
-      </aside>
 
       <div className="relative mx-auto max-w-[1600px]">
         <main className="min-w-0 px-5 py-8 sm:px-7 lg:px-10 lg:py-10">

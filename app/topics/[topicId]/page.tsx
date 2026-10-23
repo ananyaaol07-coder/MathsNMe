@@ -2,6 +2,7 @@
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import StudentMenu from "@/components/layout/StudentMenu";
 import BrandLogo from "@/components/common/BrandLogo";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -10,25 +11,17 @@ import {
   ArrowLeft,
   ArrowRight,
   BarChart3,
-  Brain,
   Calculator,
   CheckCircle2,
   Clock3,
-  CreditCard,
   FileText,
-  FileChartColumn,
-  LayoutDashboard,
   LockKeyhole,
   LogOut,
-  Menu,
   Play,
-  Settings,
-  ShoppingBag,
   Sparkles,
   Target,
   Trophy,
   UserRound,
-  X,
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 
@@ -49,17 +42,7 @@ const vedicLevels = [
   { id: 6, title: "Advanced Techniques", description: "Combined methods and timed challenges", worksheets: 12 },
 ];
 
-const navigation = [
-  { label: "Overview", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Vedic Mathematics", icon: Calculator, href: "/topics/vedic-maths", active: true },
-  { label: "IB Mathematics", icon: Brain, href: "/topics/ib-mathematics" },
-  { label: "Olympiad", icon: Trophy, href: "/topics/olympiad", locked: true },
-  { label: "Progress", icon: BarChart3, href: "/dashboard#progress" },
-  { label: "Reports", icon: FileChartColumn, href: "/dashboard#reports" },
-  { label: "Payments", icon: CreditCard, href: "/dashboard#payments" },
-  { label: "Shop", icon: ShoppingBag, href: "/dashboard#shop" },
-  { label: "Settings", icon: Settings, href: "/profile" },
-];
+
 
 export default function TopicPage() {
   const params = useParams<{ topicId: string }>();
@@ -67,7 +50,6 @@ export default function TopicPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -172,15 +154,7 @@ export default function TopicPage() {
       <header className="relative z-30 border-b border-[#e8dfc8] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="rounded-xl border border-[#e8dfc8] p-2.5 text-slate-600 transition hover:border-[#D4AF37] hover:bg-[#fff8e4] hover:text-slate-950"
-              aria-label="Open navigation menu"
-              aria-expanded={menuOpen}
-            >
-              <Menu size={22} />
-            </button>
+            <StudentMenu />
             <Link href="/dashboard" className="hidden items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-slate-950 sm:flex">
               <ArrowLeft size={18} />
               Dashboard
@@ -240,52 +214,7 @@ export default function TopicPage() {
         </div>
       </header>
 
-      {menuOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 cursor-default bg-slate-950/35 backdrop-blur-[2px]"
-          onClick={() => setMenuOpen(false)}
-          aria-label="Close navigation menu"
-        />
-      )}
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] flex-col border-r border-[#e8dfc8] bg-white p-5 shadow-[18px_0_55px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
-        aria-hidden={!menuOpen}
-      >
-        <div className="mb-8 flex items-center justify-between border-b border-[#eee7d5] pb-5">
-          <Link href="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-            <BrandLogo className="w-28 sm:w-44" />
-          </Link>
-          <button type="button" onClick={() => setMenuOpen(false)} className="rounded-xl border border-[#e8dfc8] p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950" aria-label="Close navigation menu">
-            <X size={20} />
-          </button>
-        </div>
-
-        <nav className="space-y-1.5" aria-label="Student navigation">
-          {navigation.map(({ label, icon: Icon, href, active, locked }) =>
-            locked ? (
-              <button key={label} type="button" disabled title="Unlocks after 1 year of active learning" className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-slate-400">
-                <Icon size={19} />
-                <span className="flex-1">{label}</span>
-                <LockKeyhole size={15} />
-              </button>
-            ) : (
-              <Link key={label} href={href} onClick={() => setMenuOpen(false)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${active ? "bg-[#fff4cc] text-[#8a6500]" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}>
-                <Icon size={19} />
-                {label}
-              </Link>
-            ),
-          )}
-        </nav>
-
-        <div className="mt-auto border-t border-[#eee7d5] pt-4">
-          <button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50">
-            <LogOut size={19} />
-            Log out
-          </button>
-        </div>
-      </aside>
 
       <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 lg:py-14">
         <section className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr] lg:items-stretch">
