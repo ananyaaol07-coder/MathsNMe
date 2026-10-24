@@ -19,10 +19,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ stud
     if (!profile.exists) return Response.json({ error: "Student record not found." }, { status: 404 });
     const completedPractice = practiceSessions.docs.filter(doc => typeof doc.data().completedAt === "number").length;
     const completedIB = ibSessions.docs.filter(doc => typeof doc.data().completedAt === "number").length;
+    const sessionSummary = (snapshot: FirebaseFirestore.QuerySnapshot) => snapshot.docs
+      .filter(doc => typeof doc.data().completedAt === "number")
+      .map(doc => {
+        const data = doc.data();
+        return { id: doc.id, worksheetId: data.worksheetId || null, activity: data.activity || null, grade: data.grade || null, path: data.path || null, completedAt: data.completedAt, result: data.result || null };
+      });
     return Response.json({
       commitment: commitment.exists ? commitment.data() : null,
       reports: reports.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      activity: { practiceSessions: completedPractice, ibSessions: completedIB, ibGrades: progress.docs.map(doc => ({ grade: doc.id, ...doc.data() })) },
+      activity: { practiceSessions: completedPractice, ibSessions: completedIB, ibGrades: progress.docs.map(doc => ({ grade: doc.id, ...doc.data() })), practiceHistory: sessionSummary(practiceSessions), ibHistory: sessionSummary(ibSessions) },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Unable to load the student learning record." }, { status: 400 });

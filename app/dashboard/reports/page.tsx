@@ -11,6 +11,11 @@ import type { ReportLocation, WaygroundQuestion, WaygroundReportInput } from "@/
 type SavedReport = WaygroundReportInput & { id: string };
 type FolderSegment = { key: string; label: string };
 
+function reportProgramme(report: SavedReport): "ib" | "vm" {
+  const path = report.learningPath;
+  return path?.moduleId === "vedic-maths" || /^L[123][-]/i.test(path?.activityId || "") ? "vm" : "ib";
+}
+
 function activityName(report: SavedReport) {
   const activity = report.learningPath?.activityTitle;
   if (activity && !/not set/i.test(activity)) return activity;
@@ -24,7 +29,7 @@ function reportFolders(report: SavedReport): FolderSegment[] {
   // Chapter assessments are shown directly inside their assessment folder, while
   // every exercise activity (pre-test, worksheet, or post-test) sits together in
   // that exercise's folder. The activity remains visible on the report card.
-  return [
+  return [{ key: reportProgramme(report), label: reportProgramme(report) === "vm" ? "Vedic Mathematics" : "IB Mathematics" },
     { key: path.grade ? `grade-${path.grade}` : "grade-unset", label: path.grade ? `Grade ${path.grade}` : "Grade not set" },
     { key: path.moduleId, label: path.moduleTitle }, { key: path.chapterId, label: path.chapterTitle },
     { key: path.exerciseId, label: path.exerciseTitle },
@@ -82,19 +87,36 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<SavedReport[]>([]), [selected, setSelected] = useState<SavedReport | null>(null);
   const [mode, setMode] = useState<"recent" | "folders">("recent"), [folderPath, setFolderPath] = useState<FolderSegment[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState("");
+  const [programmeFilter, setProgrammeFilter] = useState<"all" | "ib" | "vm">("all");
+  const [resultFilter, setResultFilter] = useState<"all" | "passed" | "practice">("all");
   const load = async () => { setLoading(true); setError(""); try { const result = await reportsApi(); setReports(result.reports); setSelected(current => current ? result.reports.find((item: SavedReport) => item.id === current.id) ?? null : null); } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to load reports."); } finally { setLoading(false); } };
   useEffect(() => onAuthStateChanged(auth, user => { if (user) void load(); else setLoading(false); }), []);
 
-  const folderReports = useMemo(() => reports.filter(report => folderPath.every((segment, index) => reportFolders(report)[index]?.key === segment.key)), [reports, folderPath]);
-  const folders = useMemo(() => { const index = folderPath.length, values = new Map<string, FolderSegment & { count: number }>(); for (const report of folderReports) { const segment = reportFolders(report)[index]; if (!segment) continue; const previous = values.get(segment.key); values.set(segment.key, { ...segment, count: (previous?.count || 0) + 1 }); } return [...values.values()]; }, [folderPath.length, folderReports]);
-  const atLeaf = folderPath.length >= 4 || (folders.length === 0 && folderPath.length > 0);
+  const filteredReports = useMemo(() => reports.filter(report => (programmeFilter === "all" || reportProgramme(report) === programmeFilter) && (resultFilter === "all" || (resultFilter === "passed" ? report.accuracy >= 90 : report.accuracy < 90))), [reports, programmeFilter, resultFilter]);
+  const folderReports = useMemo(() => filteredReports.filter(report => folderPath.every((segment, index) => reportFolders(report)[index]?.key === segment.key)), [filteredReports, folderPath]);
+  const folders = useMemo(() => {
+    const index = folderPath.length;
+    const values = new Map<string, FolderSegment & { count: number }>();
+    if (index === 0) {
+      values.set("ib", { key: "ib", label: "IB Mathematics", count: 0 });
+      values.set("vm", { key: "vm", label: "Vedic Mathematics", count: 0 });
+    }
+    for (const report of folderReports) {
+      const segment = reportFolders(report)[index];
+      if (!segment) continue;
+      const previous = values.get(segment.key);
+      values.set(segment.key, { ...segment, count: (previous?.count || 0) + 1 });
+    }
+    return [...values.values()];
+  }, [folderPath.length, folderReports]);
+  const atLeaf = folderPath.length >= 5 || (folders.length === 0 && folderPath.length > 0);
 
   return <main id="report-print-root" className="min-h-screen bg-[#fffcf5] px-5 py-10 text-slate-900 sm:px-8 print:bg-white print:p-0"><div className="mx-auto max-w-7xl">
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between print:hidden"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-[#9a7200]">Your learning record</p><h1 className="mt-2 text-4xl font-black tracking-tight">Reports</h1><p className="mt-2 text-slate-600">Find recent results quickly or browse them inside their learning folders.</p></div><button onClick={() => void load()} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#d8c98e] bg-white px-4 py-2.5 text-sm font-bold"><RefreshCw size={16}/>Refresh</button></header>
-    {!selected && <div className="mt-8 flex gap-2 rounded-2xl border border-[#eadfb9] bg-white p-1.5 print:hidden"><button onClick={() => { setMode("recent"); setFolderPath([]); }} className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black ${mode === "recent" ? "bg-[#fff1b8] text-[#8a6500]" : "text-slate-500"}`}><Clock3 size={17}/>Recents</button><button onClick={() => { setMode("folders"); setFolderPath([]); }} className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black ${mode === "folders" ? "bg-[#fff1b8] text-[#8a6500]" : "text-slate-500"}`}><Folder size={17}/>Learning folders</button></div>}
+    {!selected && <><div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-[#eadfb9] bg-white p-1.5 print:hidden"><button onClick={() => { setMode("recent"); setFolderPath([]); }} className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black ${mode === "recent" ? "bg-[#fff1b8] text-[#8a6500]" : "text-slate-500"}`}><Clock3 size={17}/>Recents</button><button onClick={() => { setMode("folders"); setFolderPath([]); }} className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black ${mode === "folders" ? "bg-[#fff1b8] text-[#8a6500]" : "text-slate-500"}`}><Folder size={17}/>Learning folders</button></div><div className="mt-4 flex flex-wrap gap-3 print:hidden"><label className="text-sm font-bold text-slate-600">Programme<select value={programmeFilter} onChange={event => { setProgrammeFilter(event.target.value as typeof programmeFilter); setFolderPath([]); }} className="ml-2 rounded-xl border border-[#eadfb9] bg-white px-3 py-2"><option value="all">All</option><option value="ib">IB Mathematics</option><option value="vm">Vedic Mathematics</option></select></label><label className="text-sm font-bold text-slate-600">Result<select value={resultFilter} onChange={event => setResultFilter(event.target.value as typeof resultFilter)} className="ml-2 rounded-xl border border-[#eadfb9] bg-white px-3 py-2"><option value="all">All results</option><option value="passed">Passed (90%+)</option><option value="practice">Needs practice</option></select></label></div></>}
     {error && <p className="mt-8 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>}
-    {selected ? <section className="mt-7"><button onClick={() => setSelected(null)} className="mb-5 inline-flex items-center gap-2 rounded-xl border border-[#e8dfc8] bg-white px-4 py-2 text-sm font-bold print:hidden"><ArrowLeft size={15}/>Back to reports</button><ReportDetail report={selected}/></section> : loading ? <p className="mt-12 text-slate-500">Loading reports…</p> : reports.length === 0 ? <section className="mt-10 rounded-3xl border border-dashed border-[#d8c98e] bg-white p-12 text-center"><FileChartColumn className="mx-auto text-[#B8860B]" size={42}/><h2 className="mt-4 text-xl font-black">No reports yet</h2><p className="mt-2 text-sm text-slate-500">Complete a Wayground quiz with the extension enabled. Your report will be saved here.</p></section> : mode === "recent" ? <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{reports.map(report => <ReportButton key={report.id} report={report} active={false} onClick={() => setSelected(report)}/>)}</div> : <section className="mt-7 print:hidden">
-      <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"><button onClick={() => setFolderPath([])} className="hover:text-[#8a6500]">All grades</button>{folderPath.map((segment, index) => <span className="contents" key={`${segment.key}-${index}`}><ChevronRight size={15}/><button onClick={() => setFolderPath(folderPath.slice(0, index + 1))} className="hover:text-[#8a6500]">{segment.label}</button></span>)}</nav>
+    {selected ? <section className="mt-7"><button onClick={() => setSelected(null)} className="mb-5 inline-flex items-center gap-2 rounded-xl border border-[#e8dfc8] bg-white px-4 py-2 text-sm font-bold print:hidden"><ArrowLeft size={15}/>Back to reports</button><ReportDetail report={selected}/></section> : loading ? <p className="mt-12 text-slate-500">Loading reports…</p> : reports.length === 0 ? <section className="mt-10 rounded-3xl border border-dashed border-[#d8c98e] bg-white p-12 text-center"><FileChartColumn className="mx-auto text-[#B8860B]" size={42}/><h2 className="mt-4 text-xl font-black">No reports yet</h2><p className="mt-2 text-sm text-slate-500">Complete a Wayground quiz with the extension enabled. Your report will be saved here.</p></section> : mode === "recent" ? <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{filteredReports.map(report => <ReportButton key={report.id} report={report} active={false} onClick={() => setSelected(report)}/>)}</div> : <section className="mt-7 print:hidden">
+      <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500"><button onClick={() => setFolderPath([])} className="hover:text-[#8a6500]">All reports</button>{folderPath.map((segment, index) => <span className="contents" key={`${segment.key}-${index}`}><ChevronRight size={15}/><button onClick={() => setFolderPath(folderPath.slice(0, index + 1))} className="hover:text-[#8a6500]">{segment.label}</button></span>)}</nav>
       {folderPath.length > 0 && <button onClick={() => setFolderPath(folderPath.slice(0, -1))} className="mb-5 inline-flex items-center gap-2 rounded-xl border border-[#e8dfc8] bg-white px-4 py-2 text-sm font-bold"><ArrowLeft size={15}/>Back</button>}
       {!atLeaf ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{folders.map(folder => <button key={folder.key} onClick={() => setFolderPath([...folderPath, folder])} className="group flex items-center gap-4 rounded-2xl border border-[#e8dfc8] bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#D4AF37]"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff4cc] text-[#9a7200]"><Folder size={24}/></span><span className="min-w-0 flex-1"><b className="block truncate">{folder.label}</b><span className="mt-1 block text-xs text-slate-500">{folder.count} {folder.count === 1 ? "report" : "reports"}</span></span><ChevronRight className="text-slate-400" size={19}/></button>)}</div> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{folderReports.map(report => <ReportButton key={report.id} report={report} active={false} onClick={() => setSelected(report)}/>)}</div>}
     </section>}
