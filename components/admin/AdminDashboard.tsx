@@ -14,6 +14,7 @@ import StudentReview from "./StudentReview";
 import ContactRequests from "./ContactRequests";
 import IBAccessRequests from "./IBAccessRequests";
 import IBResources from "./IBResources";
+import VMResources from "./VMResources";
 import WebinarRegistrations from "./WebinarRegistrations";
 
 const fieldClass = "mt-2 w-full rounded-xl border border-[#e5dcc5] bg-white px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-[#B8860B] focus:ring-2 focus:ring-[#D4AF37]/20";
@@ -48,17 +49,18 @@ export default function AdminDashboard() {
     try { await signOut(auth); router.replace("/admin/login"); }
     catch { setError("Unable to sign out. Please try again."); setSigningOut(false); }
   }
-  const navigation = [{ label: "Contact requests", section: "contact-requests", Icon: ClipboardCheck }, { label: "IB grade requests", section: "ib-access", Icon: ClipboardCheck }, { label: "IB resources", section: "ib-resources", Icon: GraduationCap }, { label: "Overview", section: "overview", Icon: GraduationCap }, { label: "Webinar registrations", section: "webinars", Icon: Users }, { label: "Payments", section: "payments", Icon: CreditCard }, { label: "Students", section: "students", Icon: ClipboardCheck }, { label: "Goodies", section: "goodies", Icon: Gift }];
+  const navigation = [{ label: "Contact requests", section: "contact-requests", Icon: ClipboardCheck }, { label: "IB grade requests", section: "ib-access", Icon: ClipboardCheck }, { label: "IB resources", section: "ib-resources", Icon: GraduationCap }, { label: "VM resources", section: "vm-resources", Icon: GraduationCap }, { label: "Overview", section: "overview", Icon: GraduationCap }, { label: "Webinar registrations", section: "webinars", Icon: Users }, { label: "Payments", section: "payments", Icon: CreditCard }, { label: "Students", section: "students", Icon: ClipboardCheck }, { label: "Goodies", section: "goodies", Icon: Gift }];
   const sectionCopy = {
     "contact-requests": ["Account settings", "Family contact changes.", "Review requests to update student contact details."],
     "ib-access": ["IB Mathematics", "Additional grade access.", "Review requests to practise other grades."],
     "ib-resources": ["IB resources", "Exercise notes and teaching videos.", "Add the learning resources students see inside each IB exercise."],
+    "vm-resources": ["Vedic Mathematics resources", "Worksheet notes and teaching videos.", "Add the learning resources students see inside each Vedic Mathematics worksheet."],
     overview: ["Admin workspace", "Your students, at a glance.", "Monitor learning activity and key student metrics."],
     webinars: ["Webinar registrations", "Parent webinar sessions.", "Review bookings, send Zoom details, and mark completed sessions."],
     payments: ["Payments", "Payment activity.", "Review enrollment payments and account activation status."],
     students: ["Students", "Your student records.", "Search students, review learning levels, and update placement notes."],
     goodies: ["Goodies", "Resources for your MathsNMe community.", "Manage future learning resources and student rewards."],
-  }[activeSection as "contact-requests" | "ib-access" | "ib-resources" | "overview" | "webinars" | "payments" | "students" | "goodies"];
+  }[activeSection as "contact-requests" | "ib-access" | "ib-resources" | "vm-resources" | "overview" | "webinars" | "payments" | "students" | "goodies"];
   return <div className="min-h-screen bg-[#fffcf5] text-slate-900">
     <header className="border-b border-[#eadfb9] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-4 sm:px-8"><div className="flex items-center gap-3"><button aria-label="Open admin menu" onClick={() => setSidebarOpen(true)} className="rounded-xl border border-[#eadfb9] p-2"><Menu size={21} /></button><Link href="/" className="flex items-center"><BrandLogo priority /></Link></div><div className="flex items-center gap-4"><span className="hidden items-center gap-2 text-sm font-semibold text-[#8a6500] sm:flex"><ShieldCheck size={18} />Admin</span><button onClick={logout} disabled={signingOut || !!selected} title={selected ? "Return to the student list before signing out" : undefined} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><LogOut size={16} />{signingOut ? "Signing out…" : "Sign out"}</button></div></div></header>
     <div className="mx-auto flex max-w-[1440px]">
@@ -91,6 +93,7 @@ export default function AdminDashboard() {
       </>)}
       {activeSection === "ib-access" && <IBAccessRequests />}
       {activeSection === "ib-resources" && <IBResources />}
+      {activeSection === "vm-resources" && <VMResources />}
       {activeSection === "contact-requests" && <ContactRequests />}
       {activeSection === "payments" && <WebinarRegistrations paymentsOnly />}
       {activeSection === "goodies" && <section id="goodies" className="mt-8 rounded-3xl border border-[#eadfb9] bg-white p-6"><h2 className="text-xl font-bold">Goodies</h2><p className="mt-2 text-sm text-slate-500">Goodies and resources will appear here.</p></section>}
