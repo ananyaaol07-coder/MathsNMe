@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { requireLearner } from "@/lib/server/practice";
 import { readWaygroundReport } from "@/lib/reports/wayground";
+import { deadline, recordLearning, type Commitment } from "@/lib/practice/commitment";
 
 export const runtime = "nodejs";
 
@@ -23,8 +24,22 @@ export async function POST(request: Request) {
       .update(`${uid}|${report.learningPath.grade}|${report.learningPath.activityId}|${report.quizTitle}|${report.capturedAt}|${report.total}|${report.correct}|${report.score ?? ""}`)
       .digest("hex").slice(0, 32);
     const ref = db.doc(`studentReports/${uid}/items/${fingerprint}`);
-    await ref.set({ ...report, importedAt: FieldValue.serverTimestamp() }, { merge: false });
+    const isNewReport = !(await ref.get()).exists;
+    await ref.set({ ...report, ...(isNewReport ? { practiceRewarded: false } : {}), importedAt: FieldValue.serverTimestamp() }, { merge: true });
     const path = report.learningPath;
+    // A completed Wayground assessment is learning completed on MathsNMe.
+    // It earns XP and time exactly once, even if the extension retries import.
+    if (isNewReport) {
+      const commitmentRef = db.doc(`practiceCommitments/${uid}`);
+      await db.runTransaction(async tx => {
+        const snapshot = await tx.get(commitmentRef);
+        if (!snapshot.exists) return;
+        const now = Date.now(), seconds = report.averageSeconds === null ? 60 : report.averageSeconds * report.total;
+        const commitment = recordLearning(snapshot.data() as Commitment, now, seconds);
+        tx.set(commitmentRef, { ...commitment, nextDeadline: deadline(commitment) });
+        tx.update(ref, { practiceRewarded: true, practiceRewardedAt: now, practiceActivityCounted: true });
+      });
+    }
     if (report.accuracy >= 90 && path.grade && path.moduleId && path.chapterId && path.activityId === "chapter-pre-test") {
       const progressRef = db.doc(`ibProgress/${uid}/grades/${path.grade}`), chapterKey = `${path.moduleId}/${path.chapterId}`;
       await db.runTransaction(async tx => {

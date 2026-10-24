@@ -200,7 +200,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-[#fff9e8] px-3 py-2 text-sm font-black text-[#8a6500]" title="Experience points">
               <Zap size={16} fill="currentColor" />
-              <span>0 XP</span>
+              <span>{commitment.xp} XP</span>
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[#eadfb9] bg-white px-3 py-2 text-sm font-black text-slate-700" title="MathsNMe coins">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-[9px] font-black text-white">M</span>
@@ -342,8 +342,8 @@ export default function DashboardPage() {
           <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Learning statistics">
             {[
               { label: "Current level", value: profile.currentLevel || "Not set", icon: Trophy, color: "bg-[#fff2c2] text-[#b37d00]" },
-              { label: "Weekly practice", value: "0 / 60 min", icon: Clock3, color: "bg-blue-100 text-blue-600" },
-              { label: "Worksheets done", value: String(commitment.worksheetsDone), icon: FileText, color: "bg-green-100 text-green-600" },
+              { label: "Weekly practice", value: `${commitment.weeklyMinutes} / 60 min`, icon: Clock3, color: "bg-blue-100 text-blue-600" },
+              { label: "Activities done", value: String(commitment.activitiesCompleted), icon: FileText, color: "bg-green-100 text-green-600" },
               { label: "Average accuracy", value: "—", icon: BarChart3, color: "bg-purple-100 text-purple-600" },
             ].map(({ label, value, icon: Icon, color }) => (
               <article key={label} className="rounded-2xl border border-[#e8dfc8] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
@@ -386,11 +386,11 @@ export default function DashboardPage() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff4cc] text-[#9a7200]"><Clock3 size={21} /></div>
               </div>
               <div className="mt-7 h-3 overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full w-0 rounded-full bg-[#D4AF37]" />
+                <div className="h-full rounded-full bg-[#D4AF37]" style={{ width: `${Math.min(100, commitment.weeklyMinutes / 60 * 100)}%` }} />
               </div>
               <div className="mt-3 flex justify-between text-xs font-semibold text-slate-500">
-                <span>0 minutes completed</span>
-                <span>0%</span>
+                <span>{commitment.weeklyMinutes} minutes completed</span>
+                <span>{Math.min(100, Math.round(commitment.weeklyMinutes / 60 * 100))}%</span>
               </div>
               <p className="mt-6 rounded-2xl bg-[#faf8f2] p-4 text-xs leading-5 text-slate-600">
                 Build your daily habit by completing a worksheet in your committed time window.

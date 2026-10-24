@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       const worksheet = readWorksheet(session.worksheet);
       if (worksheet.topicId === "ib-mathematics") throw new Error("IB topic activities are not available yet.");
       const graded = gradeWorksheet(worksheet.questions, body.answers);
-      const outcome = completePractice(snapshot.data() as Commitment, now);
+      const outcome = completePractice(snapshot.data() as Commitment, now, (now - session.startedAt) / 1000);
       const result = { correct: graded.correct, total: graded.total, accuracy: graded.accuracy, bonus: outcome.bonus, onTime: outcome.onTime, commitment: outcome.state };
       tx.set(stateRef, { ...outcome.state, nextDeadline: deadline(outcome.state) });
       tx.update(sessionRef, { completedAt: now, answers: graded.answers, result });

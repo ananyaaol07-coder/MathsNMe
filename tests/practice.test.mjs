@@ -18,6 +18,12 @@ test('completion window includes both boundaries but excludes one millisecond ou
   }
   for (const offset of [-WINDOW_MS - 1, WINDOW_MS + 1]) assert.equal(completePractice(initial(), at() + offset).bonus, 0);
 });
+test('each completed worksheet records earned XP and rounded practice minutes', () => {
+  const first = completePractice(initial(), at(), 121).state;
+  assert.equal(first.xp, 10); assert.equal(first.minutesCompleted, 3); assert.equal(first.weeklyMinutes, 3);
+  const second = completePractice(first, at() + 3600000, 1).state;
+  assert.equal(second.xp, 20); assert.equal(second.minutesCompleted, 4); assert.equal(second.weeklyMinutes, 4);
+});
 test('opening day and early practice never earn a bonus or immediately penalize', () => {
   const result = completePractice(initial(), at('2026-10-22'));
   assert.equal(result.bonus, 0); assert.equal(result.state.missedDays, 0);
