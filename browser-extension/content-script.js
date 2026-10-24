@@ -48,8 +48,8 @@
     const percentage = pick(body, [/(\d{1,3}(?:\.\d+)?)\s*%\s*(?:accuracy|correct)?/i, /accuracy\s*[:\-]?\s*(\d{1,3}(?:\.\d+)?)\s*%/i]);
     const fraction = body.match(/(\d+)\s*\/\s*(\d+)\s*(?:correct|questions?)?/i);
     const correct = pick(body, [/(\d+)\s*(?:correct answers?|correct)\b/i]) ?? (fraction ? Number(fraction[1]) : null);
-    const performanceTotal = pick(body, [/performance stats\s*(\d+)\s*questions?/i]);
-    const total = performanceTotal ?? (fraction ? Number(fraction[2]) : pick(body, [/(?:out of|total(?: questions?)?)\s*[:\-]?\s*(\d+)/i]));
+    const performanceTotal = pick(body, [/performance stats\s*(\d+)\s*questions?/i, /(\d+)\s*questions?\s*$/im]);
+    const total = performanceTotal ?? (fraction ? Number(fraction[2]) : pick(body, [/(?:out of|total(?: questions?)?)\s*[:\-]?\s*(\d+)/i, /(\d+)\s*questions?/i]));
     const derivedAccuracy = correct !== null && total !== null && total > 0 ? (correct / total) * 100 : null;
     if ((percentage === null && derivedAccuracy === null) || correct === null || total === null || total < 1) return;
     const capturedAt = Date.now();

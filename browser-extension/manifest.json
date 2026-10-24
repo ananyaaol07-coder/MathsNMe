@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Maths n Me \u2013 Wayground Reports",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Saves completed Wayground quiz results to the signed-in student's Maths n Me reports.",
   "permissions": [
     "storage",
