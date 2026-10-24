@@ -1,6 +1,6 @@
 import { activityDocument, readActivity } from "@/lib/server/ib-activities";
 import { requireLearner } from "@/lib/server/practice";
-import { IB_GRADES, canAccessGrade, curriculumView, curriculumWithPlaceholders, externalActivityLink, hasChapterTests, isAutomaticGrade, validGrade, type Progress } from "@/lib/ib/curriculum";
+import { IB_GRADES, canAccessGrade, curriculumView, curriculumWithPlaceholders, externalActivityLink, hasChapterTests, isAutomaticGrade, migrateLegacyGradeSixProgress, validGrade, type Progress } from "@/lib/ib/curriculum";
 import type { ReportLocation } from "@/lib/reports/wayground";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
@@ -19,7 +19,11 @@ export async function GET(request: Request) {
     if (String(grade) !== segments[0] || !validGrade(grade) || !canAccessGrade(registeredGrade, grade, statuses[grade])) return Response.json({ error: "This grade is locked. Request admin approval from the grade cards." }, { status: 403 });
     const curriculum = (await db.doc(`ibCurricula/${grade}`).get()).data();
     const modules = curriculumWithPlaceholders(curriculum?.modules, grade);
-    const progress = (await db.doc(`ibProgress/${uid}/grades/${grade}`).get()).data()?.nodes as Progress | undefined;
+    const progressRef = db.doc(`ibProgress/${uid}/grades/${grade}`);
+    const storedProgress = (await progressRef.get()).data()?.nodes as Progress | undefined;
+    const migration = grade === 6 ? migrateLegacyGradeSixProgress(storedProgress || {}) : { progress: storedProgress || {}, migrated: false };
+    if (migration.migrated) await progressRef.set({ nodes: migration.progress }, { mergeFields: ["nodes"] });
+    const progress = migration.progress;
     const chapterTests = hasChapterTests(registeredGrade, grade);
     const contentPath = segments.slice(1);
     const view = curriculumView(modules, contentPath, progress || {}, { chapterTests });

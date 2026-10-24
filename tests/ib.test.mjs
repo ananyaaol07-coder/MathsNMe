@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IB_PASS_SCORE, canAccessGrade, externalActivityLink, hasChapterTests, validGrade, parseCurriculum, curriculumWithPlaceholders, curriculumView, applyActivity, validateCriteria, passesTest } from '../lib/ib/curriculum.ts';
+import { IB_PASS_SCORE, canAccessGrade, externalActivityLink, migrateLegacyGradeSixProgress, hasChapterTests, validGrade, parseCurriculum, curriculumWithPlaceholders, curriculumView, applyActivity, validateCriteria, passesTest } from '../lib/ib/curriculum.ts';
 
 const exercise = id => ({ id, title: id, children: [] });
 const chapter = id => ({ id, title: id, children: [exercise('e1'), exercise('e2')] });
@@ -22,7 +22,7 @@ test('Chapter 8 exposes the mapped Wayground assessment links', () => {
     [['algebra', 'chapter-8', 'expressions-and-equations'], 'post-test', '48216141'],
   ];
   for (const [path, activity, code] of links) assert.equal(externalActivityLink(6, path, activity), `https://wayground.com/join?gc=${code}`);
-  assert.equal(externalActivityLink(7, ['algebra', 'chapter-8'], 'chapter-pre-test'), null);
+  assert.equal(externalActivityLink(7, ['algebra', 'chapter-8'], 'chapter-pre-test'), 'https://wayground.com/join?gc=53130749');
 });
 
 test('current and immediately previous grades are automatic; all others need approval', () => {
@@ -37,14 +37,57 @@ test('current and immediately previous grades are automatic; all others need app
   assert.equal(validGrade('6'),false);
 });
 
-test('Grade 6 uses the configured Algebra labels when no curriculum document exists', () => {
+test('Grade 6 uses four named modules with the prepared Algebra activity links', () => {
   const gradeSix = curriculumWithPlaceholders(undefined, 6);
-  assert.deepEqual(gradeSix.map(node => node.title), ['Algebra']);
-  assert.deepEqual(gradeSix[0].children.map(node => node.title), ['Chapter 8: Operations, Sequences & Equations']);
+  assert.deepEqual(gradeSix.map(node => node.title), ['Algebra', 'Number & Operations', 'Geometry', 'Measurement']);
+  assert.deepEqual(gradeSix[0].children.map(node => node.title), ['Chapter 1: Operations, Sequences & Equations', 'Chapter 2: Operations, Sequences & Equations Practice 1', 'Chapter 3: Operations, Sequences & Equations Practice 2', 'Chapter 4: Operations, Sequences & Equations Practice 3', 'Chapter 5: Operations, Sequences & Equations Practice 4', 'Chapter 6: Operations, Sequences & Equations Practice 5', 'Chapter 7: Operations, Sequences & Equations Practice 6']);
   assert.deepEqual(gradeSix[0].children[0].children.map(node => node.title), [
     'Operations & Sequences', 'Multiplication Tables & Rules', 'Expressions & Equations',
   ]);
   assert.equal(gradeSix[0].children[0].children.some(node => /6A08|EX0|WS\d|Exercise \d/.test(node.title)), false);
+  assert.equal(externalActivityLink(6, ['number-and-operations', 'chapter-1'], 'chapter-pre-test'), 'https://wayground.com/join?gc=53130749');
+  assert.equal(externalActivityLink(6, ['geometry', 'chapter-3', 'operations-and-sequences'], 'pre-test'), 'https://wayground.com/join?gc=40654925');
+  assert.equal(externalActivityLink(6, ['measurement', 'chapter-7', 'expressions-and-equations'], 'post-test'), 'https://wayground.com/join?gc=48216141');
+  assert.equal(externalActivityLink(6, ['algebra', 'chapter-1', 'operations-and-sequences'], 'worksheet-1'), 'https://wayground.com/join?gc=35869785');
+  assert.equal(externalActivityLink(6, ['algebra', 'chapter-1', 'operations-and-sequences'], 'worksheet-4'), 'https://wayground.com/join?gc=39277657');
+  assert.equal(externalActivityLink(6, ['algebra', 'chapter-1', 'multiplication-tables-and-rules'], 'worksheet-4'), 'https://wayground.com/join?gc=66257465');
+  assert.equal(externalActivityLink(6, ['algebra', 'chapter-1', 'expressions-and-equations'], 'worksheet-3'), 'https://wayground.com/join?gc=28934713');
+  const worksheets = curriculumView(gradeSix, ['algebra', 'chapter-1', 'operations-and-sequences'], {}, current).activities.filter(item => item.id.startsWith('worksheet-'));
+  assert.deepEqual(worksheets.map(item => item.title), ['Arithmetic Operations', 'Combined Operations', 'Number Sequences and Rules', 'Figure Sequences and Rules']);
+  const configuredAlgebra = curriculumWithPlaceholders([{ id: 'algebra', title: 'Algebra', children: [chapter('chapter-1')] }], 6);
+  assert.deepEqual(configuredAlgebra.map(node => node.title), ['Algebra', 'Number & Operations', 'Geometry', 'Measurement']);
+  assert.equal(configuredAlgebra[0].children.length, 7);
+  const legacyAlgebra = curriculumWithPlaceholders([{ id: 'algebra', title: 'Algebra', children: [chapter('chapter-8')] }], 6);
+  assert.deepEqual(legacyAlgebra[0].children.map(node => node.id), ['chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'chapter-5', 'chapter-6', 'chapter-7']);
+});
+
+test('Grade 7 uses the same prepared modules, chapters, and Wayground links', () => {
+  const gradeSeven = curriculumWithPlaceholders(undefined, 7);
+  assert.deepEqual(gradeSeven.map(node => node.title), ['Algebra', 'Number & Operations', 'Geometry', 'Measurement']);
+  assert.ok(gradeSeven.every(module => module.children.length === 7));
+  assert.equal(externalActivityLink(7, ['geometry', 'chapter-5', 'operations-and-sequences'], 'worksheet-1'), 'https://wayground.com/join?gc=35869785');
+});
+
+test('every Grade 6 module and chapter uses the same exercise workflow and links', () => {
+  const gradeSix = curriculumWithPlaceholders(undefined, 6);
+  for (const curriculumModule of gradeSix) for (const chapter of curriculumModule.children) {
+    assert.equal(chapter.children.length, 3);
+    const exercise = chapter.children[0];
+    assert.equal(externalActivityLink(6, [curriculumModule.id, chapter.id, exercise.id], 'worksheet-1'), 'https://wayground.com/join?gc=35869785');
+  }
+  const firstExercise = gradeSix[0].children[0].children[0];
+  const view = curriculumView(gradeSix, [gradeSix[0].id, gradeSix[0].children[0].id, firstExercise.id], {}, current);
+  assert.ok(view.activities.some(item => item.id === 'pre-test'));
+  assert.ok(view.activities.some(item => item.id === 'post-test'));
+});
+
+test('migrates saved Grade 6 Chapter 8 progress to Chapter 1', () => {
+  const legacy = { 'algebra/chapter-8': { testAttempted: true, pendingPreTestDecision: true }, 'algebra/chapter-8/operations-and-sequences': { prePassed: true } };
+  const result = migrateLegacyGradeSixProgress(legacy);
+  assert.equal(result.migrated, true);
+  assert.deepEqual(result.progress['algebra/chapter-1'], legacy['algebra/chapter-8']);
+  assert.deepEqual(result.progress['algebra/chapter-1/operations-and-sequences'], legacy['algebra/chapter-8/operations-and-sequences']);
+  assert.equal(result.progress['algebra/chapter-8'], undefined);
 });
 
 test('all modules open and current-grade chapters begin directly with exercises', () => {
@@ -99,6 +142,14 @@ test('exercise pre-test pass clears it while keeping worksheets optional', () =>
   assert.ok(view.activities.find(a=>a.id==='worksheet-10').available);
   p=apply(p,ep,'worksheet-1',true,current);
   assert.ok(curriculumView(modules,ep,p,current).exercise.completed);
+});
+
+test('exercise post-test opens after every worksheet or a passed chapter test', () => {
+  let p = apply({}, ep, 'pre-test', false, current);
+  p = practice(p);
+  assert.equal(curriculumView(modules, ep, p, current).activities.find(item => item.id === 'post-test').available, true);
+  const chapterPassed = { [cp.join('/')]: { testPassed: true } };
+  assert.equal(curriculumView(modules, ep, chapterPassed, revision).activities.find(item => item.id === 'post-test').available, true);
 });
 
 test('failed exercise pre-test requires ten distinct worksheets and a post-test', () => {

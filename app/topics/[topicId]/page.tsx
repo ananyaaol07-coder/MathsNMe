@@ -37,9 +37,6 @@ const vedicLevels = [
   { id: 1, title: "Foundation", description: "Number sense, complements, and quick addition", worksheets: 8 },
   { id: 2, title: "Fast Multiplication", description: "Core multiplication techniques and patterns", worksheets: 10 },
   { id: 3, title: "Smart Division", description: "Efficient division methods and divisibility", worksheets: 9 },
-  { id: 4, title: "Squares & Roots", description: "Rapid squares, square roots, and identities", worksheets: 10 },
-  { id: 5, title: "Fractions & Percentages", description: "Mental fractions, ratios, and percentages", worksheets: 8 },
-  { id: 6, title: "Advanced Techniques", description: "Combined methods and timed challenges", worksheets: 12 },
 ];
 
 
@@ -274,9 +271,9 @@ export default function TopicPage() {
 
           <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {vedicLevels.map((level) => {
-              const isCurrent = hasPlacement && level.id === currentLevel;
+              const isCurrent = (level.id === 1 && !hasPlacement) || (hasPlacement && level.id === currentLevel);
               const isCompleted = hasPlacement && level.id < currentLevel;
-              const isAvailable = hasPlacement && level.id <= currentLevel;
+              const isAvailable = level.id === 1 || (hasPlacement && level.id <= currentLevel);
 
               const content = (
                 <>
@@ -285,7 +282,7 @@ export default function TopicPage() {
                       {isCompleted ? <CheckCircle2 size={21} /> : level.id}
                     </span>
                     {isCurrent ? (
-                      <span className="rounded-full bg-[#fff4cc] px-3 py-1 text-xs font-black text-[#8a6500]">CURRENT</span>
+                      <span className="rounded-full bg-[#fff4cc] px-3 py-1 text-xs font-black text-[#8a6500]">{hasPlacement ? "CURRENT" : "START HERE"}</span>
                     ) : !isAvailable ? (
                       <LockKeyhole size={18} className="text-slate-400" />
                     ) : null}

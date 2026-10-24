@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       let bonus = 0;
       if (activity.startsWith("worksheet-")) {
         if (!commitment) throw new Error("Set your daily practice commitment first.");
-        const outcome = completePractice(commitment, now); bonus = outcome.bonus;
+        const outcome = completePractice(commitment, now, seconds); bonus = outcome.bonus;
         tx.set(commitmentRef, { ...outcome.state, nextDeadline: deadline(outcome.state) });
       }
       const result = { passed, score, accuracy, seconds: Math.round(seconds), bonus, activity };

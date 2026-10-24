@@ -17,15 +17,36 @@ const GRADE_SIX_CHAPTER_EIGHT_WAYGROUND_LINKS: Record<string, string> = {
   "algebra/chapter-8/chapter-post-test": "https://wayground.com/join?gc=59356669",
   "algebra/chapter-8/operations-and-sequences/pre-test": "https://wayground.com/join?gc=40654925",
   "algebra/chapter-8/operations-and-sequences/post-test": "https://wayground.com/join?gc=41539661",
+  "algebra/chapter-8/operations-and-sequences/worksheet-1": "https://wayground.com/join?gc=35869785",
+  "algebra/chapter-8/operations-and-sequences/worksheet-2": "https://wayground.com/join?gc=64181337",
+  "algebra/chapter-8/operations-and-sequences/worksheet-3": "https://wayground.com/join?gc=48976965",
+  "algebra/chapter-8/operations-and-sequences/worksheet-4": "https://wayground.com/join?gc=39277657",
   "algebra/chapter-8/multiplication-tables-and-rules/pre-test": "https://wayground.com/join?gc=00132685",
   "algebra/chapter-8/multiplication-tables-and-rules/post-test": "https://wayground.com/join?gc=39368781",
+  "algebra/chapter-8/multiplication-tables-and-rules/worksheet-1": "https://wayground.com/join?gc=39844921",
+  "algebra/chapter-8/multiplication-tables-and-rules/worksheet-2": "https://wayground.com/join?gc=43123257",
+  "algebra/chapter-8/multiplication-tables-and-rules/worksheet-3": "https://wayground.com/join?gc=49873465",
+  "algebra/chapter-8/multiplication-tables-and-rules/worksheet-4": "https://wayground.com/join?gc=66257465",
   "algebra/chapter-8/expressions-and-equations/pre-test": "https://wayground.com/join?gc=45201485",
   "algebra/chapter-8/expressions-and-equations/post-test": "https://wayground.com/join?gc=48216141",
+  "algebra/chapter-8/expressions-and-equations/worksheet-1": "https://wayground.com/join?gc=34636345",
+  "algebra/chapter-8/expressions-and-equations/worksheet-2": "https://wayground.com/join?gc=20349497",
+  "algebra/chapter-8/expressions-and-equations/worksheet-3": "https://wayground.com/join?gc=28934713",
 };
 
+const GRADE_SIX_WORKSHEETS: Record<string, string[]> = {
+  "operations-and-sequences": ["Arithmetic Operations", "Combined Operations", "Number Sequences and Rules", "Figure Sequences and Rules"],
+  "multiplication-tables-and-rules": ["Table Multiply Rule", "Table Multiply", "Table Multiply Add/Sub Rule", "Table Multiply Add/Sub"],
+  "expressions-and-equations": ["Expression One Value", "Expression Value", "Sentence Equation"],
+};
+function worksheetTitles(path: string[]) { return GRADE_SIX_WORKSHEETS[path.at(-1) || ""] || []; }
+
 export function externalActivityLink(grade: number, path: string[], activity: Activity): string | null {
-  if (grade !== 6) return null;
-  return GRADE_SIX_CHAPTER_EIGHT_WAYGROUND_LINKS[[...path, activity].join("/")] || null;
+  if (grade !== 6 && grade !== 7) return null;
+  // Grade 6 and Grade 7 share the prepared Wayground activities while using
+  // their own visible module and chapter names.
+  const activityPath = ["algebra", "chapter-8", ...path.slice(2), activity];
+  return GRADE_SIX_CHAPTER_EIGHT_WAYGROUND_LINKS[activityPath.join("/")] || null;
 }
 
 export function validateCriteria(value: unknown): Criteria {
@@ -69,23 +90,41 @@ const PLACEHOLDER_LEVELS = [
   { label: "Chapter", count: 6 },
   { label: "Exercise", count: 3 },
 ];
-const GRADE_SIX_CURRICULUM: CurriculumNode[] = [
-  {
-    id: "algebra", title: "Algebra", children: [
-      {
-        id: "chapter-8", title: "Chapter 8: Operations, Sequences & Equations", children: [
-          { id: "operations-and-sequences", title: "Operations & Sequences", children: [] },
-          { id: "multiplication-tables-and-rules", title: "Multiplication Tables & Rules", children: [] },
-          { id: "expressions-and-equations", title: "Expressions & Equations", children: [] },
-        ],
-      },
+const chapterTitles = (topic: string) => Array.from({ length: 7 }, (_, index) => `Chapter ${index + 1}: ${topic}${index ? ` Practice ${index}` : ""}`);
+function gradeSixChapters(topic: string, exercises: [string, string, string]): CurriculumNode[] {
+  return chapterTitles(topic).map((title, index) => ({
+    id: `chapter-${index + 1}`, title, children: [
+      { id: "operations-and-sequences", title: exercises[0], children: [] },
+      { id: "multiplication-tables-and-rules", title: exercises[1], children: [] },
+      { id: "expressions-and-equations", title: exercises[2], children: [] },
     ],
-  },
+  }));
+}
+const GRADE_SIX_CURRICULUM: CurriculumNode[] = [
+  { id: "algebra", title: "Algebra", children: gradeSixChapters("Operations, Sequences & Equations", ["Operations & Sequences", "Multiplication Tables & Rules", "Expressions & Equations"]) },
+  { id: "number-and-operations", title: "Number & Operations", children: gradeSixChapters("Number Skills & Patterns", ["Arithmetic Operations & Patterns", "Multiplication & Division Facts", "Number Sentences & Rules"]) },
+  { id: "geometry", title: "Geometry", children: gradeSixChapters("Shape & Space", ["Shapes, Angles & Patterns", "Lines, Symmetry & Transformations", "Geometric Relationships"]) },
+  { id: "measurement", title: "Measurement", children: gradeSixChapters("Length, Area & Volume", ["Units & Conversions", "Perimeter & Area", "Volume & Capacity"]) },
 ];
 
 export function curriculumWithPlaceholders(value: unknown, grade?: number): CurriculumNode[] {
   const configured = parseCurriculum(value ?? []);
-  const curriculum = configured.length ? configured : grade === 6 ? GRADE_SIX_CURRICULUM : configured;
+  // Earlier Grade 6 documents stored only the old Chapter 8. Replace that
+  // legacy chapter with the standard Chapter 1–7 set while preserving any
+  // configured chapters that use the new numbering. Grade 7 uses the same
+  // prepared module and chapter structure.
+  const curriculum = grade === 6 || grade === 7
+    ? [...GRADE_SIX_CURRICULUM.map(defaultModule => {
+      const configuredModule = configured.find(module => module.id === defaultModule.id);
+      const configuredChapters = configuredModule?.children.filter(chapter => /^chapter-[1-7]$/.test(chapter.id)) || [];
+      if (!configuredModule || !configuredChapters.length) return defaultModule;
+      return {
+        ...configuredModule,
+        children: defaultModule.children.map(chapter => configuredChapters.find(item => item.id === chapter.id) || chapter)
+          .concat(configuredModule.children.filter(chapter => !/^chapter-[1-8]$/.test(chapter.id) && !defaultModule.children.some(item => item.id === chapter.id))),
+      };
+    }), ...configured.filter(module => !GRADE_SIX_CURRICULUM.some(defaultModule => defaultModule.id === module.id))]
+    : configured;
   function fill(nodes: CurriculumNode[], depth: number): CurriculumNode[] {
     const { label, count } = PLACEHOLDER_LEVELS[depth];
     const cards = nodes.length ? nodes : Array.from({ length: count }, (_, index) => ({
@@ -94,6 +133,19 @@ export function curriculumWithPlaceholders(value: unknown, grade?: number): Curr
     return cards.map(node => ({ ...node, children: depth === 2 ? [] : fill(node.children, depth + 1) }));
   }
   return fill(curriculum, 0);
+}
+
+export function migrateLegacyGradeSixProgress(progress: Progress): { progress: Progress; migrated: boolean } {
+  const migrated = structuredClone(progress);
+  let changed = false;
+  for (const [key, state] of Object.entries(progress)) {
+    if (!/\/chapter-8(?:\/|$)/.test(key)) continue;
+    const replacement = key.replace(/\/chapter-8(?=\/|$)/, "/chapter-1");
+    if (!(replacement in migrated)) migrated[replacement] = state;
+    delete migrated[key];
+    changed = true;
+  }
+  return { progress: changed ? migrated : progress, migrated: changed };
 }
 
 export function isComplete(node: CurriculumNode, path: string[], depth: number, progress: Progress, options: CurriculumOptions): boolean {
@@ -141,11 +193,13 @@ export function curriculumView(modules: CurriculumNode[], path: string[], progre
   }
   if (depth === 3) {
     const complete = chapterPassed || isComplete(current!, path, 2, progress, options);
-    activities.push({ id: "pre-test", title: "Exercise pre-test", available: !complete && !state.preAttempted, complete: state.prePassed === true,
-      reason: complete ? "Exercise cleared · worksheets remain optional" : state.preAttempted ? "Complete the worksheets, then the post-test" : "Meet this test’s score, accuracy and time targets to clear the exercise" });
-    for (let i = 1; i <= 10; i++) activities.push({ id: `worksheet-${i}`, title: `Worksheet ${i}`, available: complete || state.preAttempted === true, complete: state.worksheets?.includes(i) === true, reason: complete ? "Optional practice" : state.preAttempted ? "Required practice before the post-test" : "Take the exercise pre-test first" });
-    const practiced = Array.from({ length: 10 }, (_, i) => i + 1).every(i => state.worksheets?.includes(i));
-    activities.push({ id: "post-test", title: "Exercise post-test", available: !complete && practiced, complete: state.postPassed === true, reason: complete ? "Exercise cleared" : practiced ? "Ready to assess your progress" : "Complete all 10 worksheets in this practice round first" });
+    activities.push({ id: "pre-test", title: "Exercise pre-test", available: !state.preAttempted, complete: state.prePassed === true,
+      reason: complete ? "Optional practice · this exercise is already cleared" : state.preAttempted ? "Complete the worksheets, then the post-test" : "Meet this test’s score, accuracy and time targets to clear the exercise" });
+    const titles = worksheetTitles(path);
+    const worksheetTotal = titles.length || 10;
+    for (let i = 1; i <= worksheetTotal; i++) activities.push({ id: `worksheet-${i}`, title: titles[i - 1] || `Worksheet ${i}`, available: complete || state.preAttempted === true, complete: state.worksheets?.includes(i) === true, reason: complete ? "Optional practice" : state.preAttempted ? "Required practice before the post-test" : "Take the exercise pre-test first" });
+    const practiced = Array.from({ length: worksheetTotal }, (_, i) => i + 1).every(i => state.worksheets?.includes(i));
+    activities.push({ id: "post-test", title: "Exercise post-test", available: (practiced || chapterPassed) && state.postPassed !== true, complete: state.postPassed === true, reason: state.postPassed ? "Passed · this exercise is complete" : chapterPassed ? "Optional assessment · the chapter is already passed" : practiced ? "Ready to assess your progress" : `Complete all ${worksheetTotal} worksheets in this practice round first` });
   }
   return { breadcrumbs, children, activities,
     exercise: depth === 3 ? { title: current!.title, practiceRequired: !chapterPassed && state.practiceRequired === true, completed: chapterPassed || isComplete(current!, path, 2, progress, options) } : null };
