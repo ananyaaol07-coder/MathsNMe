@@ -5,7 +5,7 @@ Entry: `/topics/ib-mathematics`. Cards cover grades 3–12. A child automaticall
 The two automatic grades have different learning modes:
 
 - **Current grade:** no chapter tests. Every exercise must be cleared in sequence to complete a chapter.
-- **Previous grade:** each chapter begins with a chapter test. Passing clears the chapter. Failure opens the chapter's exercises; after clearing every exercise, the child retakes the chapter test.
+- **Previous grade:** each chapter begins with a chapter pre-test. It opens the exercises. After clearing every exercise, the child takes the chapter post-test to complete the chapter.
 - **Other admin-approved grades:** use the current-grade exercise flow. Chapter tests are reserved for the immediately previous grade.
 
 ## Curriculum structure
@@ -39,13 +39,13 @@ Each exercise directly contains a pre-test, worksheets 1–10 and a post-test.
 3. Failing the post-test starts a fresh practice round and clears that round's worksheet checklist.
 4. Passing the post-test clears the exercise and unlocks the next exercise.
 5. In the current grade, clearing every exercise completes the chapter and unlocks the next chapter.
-6. In the previous grade, clearing every exercise enables the required chapter-test retake.
+6. In the previous grade, clearing every exercise unlocks the chapter post-test.
 
 All modules remain independently accessible. Chapters and exercises unlock sequentially within their parent.
 
 ## Activity documents
 
-`ibActivities/{grade}_{module}_{chapter}[_{exercise}]_{activity}` stores published content. Activities are `chapter-test`, `pre-test`, `post-test`, and `worksheet-1` through `worksheet-10`.
+`ibActivities/{grade}_{module}_{chapter}[_{exercise}]_{activity}` stores published content. Activities are `chapter-pre-test`, `chapter-post-test`, `pre-test`, `post-test`, and `worksheet-1` through `worksheet-10`.
 
 Chapter-test questions must collectively cover every exercise ID in that chapter using the question's `coverage` field. Exercise activities do not need `coverage`. Every test has a fixed minimum score of **90%**. Accuracy and time limits remain independently configurable for each test; worksheets have no pass criteria.
 

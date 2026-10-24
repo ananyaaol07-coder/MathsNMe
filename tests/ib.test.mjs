@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IB_PASS_SCORE, canAccessGrade, hasChapterTests, validGrade, parseCurriculum, curriculumView, applyActivity, validateCriteria, passesTest } from '../lib/ib/curriculum.ts';
+import { IB_PASS_SCORE, canAccessGrade, externalActivityLink, hasChapterTests, validGrade, parseCurriculum, curriculumWithPlaceholders, curriculumView, applyActivity, validateCriteria, passesTest } from '../lib/ib/curriculum.ts';
 
 const exercise = id => ({ id, title: id, children: [] });
 const chapter = id => ({ id, title: id, children: [exercise('e1'), exercise('e2')] });
@@ -9,6 +9,21 @@ const cp = ['m1','c1'], ep = [...cp,'e1'];
 const revision = { chapterTests: true }, current = { chapterTests: false };
 const apply = (p, path, activity, passed, options = current) => applyActivity(modules, path, p, activity, passed, options);
 const practice = (p, path = ep, options = current) => { for(let i=1;i<=10;i++) p = apply(p,path,`worksheet-${i}`,true,options); return p; };
+
+test('Chapter 8 exposes the mapped Wayground assessment links', () => {
+  const links = [
+    [['algebra', 'chapter-8'], 'chapter-pre-test', '53130749'],
+    [['algebra', 'chapter-8'], 'chapter-post-test', '59356669'],
+    [['algebra', 'chapter-8', 'operations-and-sequences'], 'pre-test', '40654925'],
+    [['algebra', 'chapter-8', 'operations-and-sequences'], 'post-test', '41539661'],
+    [['algebra', 'chapter-8', 'multiplication-tables-and-rules'], 'pre-test', '00132685'],
+    [['algebra', 'chapter-8', 'multiplication-tables-and-rules'], 'post-test', '39368781'],
+    [['algebra', 'chapter-8', 'expressions-and-equations'], 'pre-test', '45201485'],
+    [['algebra', 'chapter-8', 'expressions-and-equations'], 'post-test', '48216141'],
+  ];
+  for (const [path, activity, code] of links) assert.equal(externalActivityLink(6, path, activity), `https://wayground.com/join?gc=${code}`);
+  assert.equal(externalActivityLink(7, ['algebra', 'chapter-8'], 'chapter-pre-test'), null);
+});
 
 test('current and immediately previous grades are automatic; all others need approval', () => {
   assert.equal(canAccessGrade(6,6),true);
@@ -20,6 +35,16 @@ test('current and immediately previous grades are automatic; all others need app
   assert.equal(hasChapterTests(6,6),false);
   assert.equal(hasChapterTests(6,4),false);
   assert.equal(validGrade('6'),false);
+});
+
+test('Grade 6 uses the configured Algebra labels when no curriculum document exists', () => {
+  const gradeSix = curriculumWithPlaceholders(undefined, 6);
+  assert.deepEqual(gradeSix.map(node => node.title), ['Algebra']);
+  assert.deepEqual(gradeSix[0].children.map(node => node.title), ['Chapter 8: Operations, Sequences & Equations']);
+  assert.deepEqual(gradeSix[0].children[0].children.map(node => node.title), [
+    'Operations & Sequences', 'Multiplication Tables & Rules', 'Expressions & Equations',
+  ]);
+  assert.equal(gradeSix[0].children[0].children.some(node => /6A08|EX0|WS\d|Exercise \d/.test(node.title)), false);
 });
 
 test('all modules open and current-grade chapters begin directly with exercises', () => {
@@ -41,28 +66,30 @@ test('current grade requires every exercise and has no chapter-test shortcut', (
   assert.equal(curriculumView(modules,['m1'],p,current).children[1].unlocked,true);
 });
 
-test('revision grade starts with a chapter test and a pass clears the chapter', () => {
-  const view=curriculumView(modules,cp,{},revision);
-  assert.ok(view.activities.find(a=>a.id==='chapter-test').available);
+test('revision grade starts with a chapter pre-test and ends with a chapter post-test', () => {
+  let view=curriculumView(modules,cp,{},revision);
+  assert.ok(view.activities.find(a=>a.id==='chapter-pre-test').available);
+  assert.equal(view.activities.find(a=>a.id==='chapter-post-test').available,false);
   assert.ok(view.children.every(n=>!n.unlocked));
-  assert.throws(()=>curriculumView(modules,ep,{},revision),/chapter test/);
-  const p=apply({},cp,'chapter-test',true,revision);
-  assert.ok(curriculumView(modules,['m1'],p,revision).children[1].unlocked);
-  assert.ok(curriculumView(modules,cp,p,revision).children.every(n=>n.unlocked));
-  assert.ok(curriculumView(modules,[...cp,'e2'],p,revision).exercise.completed);
-});
-
-test('failed revision chapter test opens sequential exercises and requires a retest', () => {
-  let p=apply({},cp,'chapter-test',false,revision);
+  assert.throws(()=>curriculumView(modules,ep,{},revision),/chapter pre-test/);
+  let p=apply({},cp,'chapter-pre-test',false,revision);
   assert.equal(curriculumView(modules,cp,p,revision).children[0].unlocked,true);
-  assert.equal(curriculumView(modules,cp,p,revision).children[1].unlocked,false);
-  assert.throws(()=>apply(p,cp,'chapter-test',true,revision),/locked/);
   p=apply(p,ep,'pre-test',true,revision);
   p=apply(p,[...cp,'e2'],'pre-test',true,revision);
-  assert.equal(curriculumView(modules,['m1'],p,revision).children[1].unlocked,false);
-  assert.ok(curriculumView(modules,cp,p,revision).activities[0].available);
-  p=apply(p,cp,'chapter-test',true,revision);
+  view=curriculumView(modules,cp,p,revision);
+  assert.equal(view.activities.find(a=>a.id==='chapter-post-test').available,true);
+  p=apply(p,cp,'chapter-post-test',true,revision);
   assert.ok(curriculumView(modules,['m1'],p,revision).children[1].unlocked);
+});
+
+test('chapter post-test stays locked until every exercise is complete', () => {
+  let p=apply({},cp,'chapter-pre-test',true,revision);
+  assert.equal(curriculumView(modules,cp,p,revision).activities.find(a=>a.id==='chapter-post-test').available,false);
+  p=apply(p,ep,'pre-test',true,revision);
+  assert.equal(curriculumView(modules,cp,p,revision).children[1].unlocked,true);
+  assert.equal(curriculumView(modules,cp,p,revision).activities.find(a=>a.id==='chapter-post-test').available,false);
+  p=apply(p,[...cp,'e2'],'pre-test',true,revision);
+  assert.equal(curriculumView(modules,cp,p,revision).activities.find(a=>a.id==='chapter-post-test').available,true);
 });
 
 test('exercise pre-test pass clears it while keeping worksheets optional', () => {
@@ -86,13 +113,15 @@ test('failed exercise pre-test requires ten distinct worksheets and a post-test'
   assert.ok(curriculumView(modules,ep,p,current).exercise.completed);
 });
 
-test('failed revision chapter retest invalidates descendant progress', () => {
-  let p=apply({},cp,'chapter-test',false,revision);
+test('a failed chapter post-test keeps exercise progress and allows another attempt', () => {
+  let p=apply({},cp,'chapter-pre-test',true,revision);
   p=apply(p,ep,'pre-test',true,revision);
   p=apply(p,[...cp,'e2'],'pre-test',true,revision);
-  p=apply(p,cp,'chapter-test',false,revision);
-  assert.equal(p[ep.join('/')],undefined);
-  assert.throws(()=>apply(p,cp,'chapter-test',true,revision),/locked/);
+  p=apply(p,cp,'chapter-post-test',false,revision);
+  assert.ok(p[ep.join('/')]);
+  assert.equal(curriculumView(modules,cp,p,revision).activities.find(a=>a.id==='chapter-post-test').available,true);
+  p=apply(p,cp,'chapter-post-test',true,revision);
+  assert.ok(curriculumView(modules,['m1'],p,revision).children[1].unlocked);
 });
 
 test('every test uses a fixed 90% score gate with separately configured accuracy and time', () => {

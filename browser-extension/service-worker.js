@@ -8,6 +8,10 @@ function encodePayload(value) {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "SET_PENDING_LOCATION") {
+    chrome.storage.local.set({ pendingLocation: message.location }).then(() => sendResponse({ ok: true })).catch(error => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
   if (message?.type !== "WAYGROUND_RESULT") return;
   (async () => {
     const { siteUrl = DEFAULT_SITE } = await chrome.storage.sync.get("siteUrl");

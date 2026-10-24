@@ -7,7 +7,7 @@ export async function ibContext(db: Firestore, uid: string, registeredGrade: num
   const approval = (await db.doc(`ibGradeRequests/${uid}_${grade}`).get()).data()?.status;
   if (!canAccessGrade(registeredGrade, grade, approval)) throw new Error("This grade is locked.");
   const curriculum = (await db.doc(`ibCurricula/${grade}`).get()).data();
-  return { grade, path: path as string[], modules: curriculumWithPlaceholders(curriculum?.modules), options: { chapterTests: hasChapterTests(registeredGrade, grade) } };
+  return { grade, path: path as string[], modules: curriculumWithPlaceholders(curriculum?.modules, grade), options: { chapterTests: hasChapterTests(registeredGrade, grade) } };
 }
 export function progressVersion(path: string[], progress: Progress) { return path.map((_, i) => progress[path.slice(0, i + 1).join("/")]?.revision || 0).join(":"); }
 export type IBQuestion = PracticeQuestion & { points: number; coverage?: string };
@@ -16,7 +16,7 @@ export function readActivity(value: unknown, activity: Activity, children: strin
   readWorksheet({ ...data, topicId: "ib-mathematics", levelId: 1 });
   const questions = data!.questions!;
   if (questions.some(q => !Number.isFinite(q.points) || q.points <= 0 || q.points > 100)) throw new Error("Configure question marks first.");
-  if (activity === "chapter-test") {
+  if (activity === "chapter-pre-test" || activity === "chapter-post-test") {
     if (!children.length || children.some(id => !questions.some(q => q.coverage === id)) || questions.some(q => !q.coverage || !children.includes(q.coverage))) throw new Error("This test must cover every exercise in its chapter.");
   }
   return { title: data!.title!, questions, criteria: activity.startsWith("worksheet-") ? null : validateCriteria(data!.criteria) };

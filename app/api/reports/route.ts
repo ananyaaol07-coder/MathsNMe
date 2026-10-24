@@ -24,6 +24,16 @@ export async function POST(request: Request) {
       .digest("hex").slice(0, 32);
     const ref = db.doc(`studentReports/${uid}/items/${fingerprint}`);
     await ref.set({ ...report, importedAt: FieldValue.serverTimestamp() }, { merge: false });
+    const path = report.learningPath;
+    if (report.accuracy >= 90 && path.grade && path.moduleId && path.chapterId && path.activityId === "chapter-pre-test") {
+      const progressRef = db.doc(`ibProgress/${uid}/grades/${path.grade}`), chapterKey = `${path.moduleId}/${path.chapterId}`;
+      await db.runTransaction(async tx => {
+        const nodes = ((await tx.get(progressRef)).data()?.nodes || {}) as Record<string, Record<string, unknown>>;
+        const state = nodes[chapterKey] || {};
+        if (state.testPassed !== true) nodes[chapterKey] = { ...state, pendingPreTestDecision: true, pendingPreTestReportId: fingerprint, revision: Number(state.revision || 0) + 1 };
+        tx.set(progressRef, { nodes }, { mergeFields: ["nodes"] });
+      });
+    }
     return Response.json({ ok: true, reportId: fingerprint });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Unable to save this report." }, { status: 400 });

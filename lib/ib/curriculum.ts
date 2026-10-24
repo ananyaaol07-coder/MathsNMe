@@ -3,13 +3,30 @@ export type CurriculumNode = { id: string; title: string; children: CurriculumNo
 export type NodeProgress = {
   completed?: boolean; practiceRequired?: boolean; testAttempted?: boolean; testPassed?: boolean;
   preAttempted?: boolean; prePassed?: boolean; postPassed?: boolean; worksheets?: number[]; revision?: number; activeTestSession?: string;
+  preTestPassed?: boolean; pendingPreTestDecision?: boolean; pendingPreTestReportId?: string;
 };
-export type Activity = "chapter-test" | "pre-test" | "post-test" | `worksheet-${number}`;
+export type Activity = "chapter-pre-test" | "chapter-post-test" | "pre-test" | "post-test" | `worksheet-${number}`;
 export type Criteria = { minScore: number; minAccuracy: number; maxSeconds: number };
 export const IB_PASS_SCORE = 90;
 export type Progress = Record<string, NodeProgress>;
 export type AccessStatus = "pending" | "approved" | "rejected";
 export type CurriculumOptions = { chapterTests: boolean };
+
+const GRADE_SIX_CHAPTER_EIGHT_WAYGROUND_LINKS: Record<string, string> = {
+  "algebra/chapter-8/chapter-pre-test": "https://wayground.com/join?gc=53130749",
+  "algebra/chapter-8/chapter-post-test": "https://wayground.com/join?gc=59356669",
+  "algebra/chapter-8/operations-and-sequences/pre-test": "https://wayground.com/join?gc=40654925",
+  "algebra/chapter-8/operations-and-sequences/post-test": "https://wayground.com/join?gc=41539661",
+  "algebra/chapter-8/multiplication-tables-and-rules/pre-test": "https://wayground.com/join?gc=00132685",
+  "algebra/chapter-8/multiplication-tables-and-rules/post-test": "https://wayground.com/join?gc=39368781",
+  "algebra/chapter-8/expressions-and-equations/pre-test": "https://wayground.com/join?gc=45201485",
+  "algebra/chapter-8/expressions-and-equations/post-test": "https://wayground.com/join?gc=48216141",
+};
+
+export function externalActivityLink(grade: number, path: string[], activity: Activity): string | null {
+  if (grade !== 6) return null;
+  return GRADE_SIX_CHAPTER_EIGHT_WAYGROUND_LINKS[[...path, activity].join("/")] || null;
+}
 
 export function validateCriteria(value: unknown): Criteria {
   const c = value as Criteria | undefined;
@@ -52,8 +69,23 @@ const PLACEHOLDER_LEVELS = [
   { label: "Chapter", count: 6 },
   { label: "Exercise", count: 3 },
 ];
-export function curriculumWithPlaceholders(value: unknown): CurriculumNode[] {
+const GRADE_SIX_CURRICULUM: CurriculumNode[] = [
+  {
+    id: "algebra", title: "Algebra", children: [
+      {
+        id: "chapter-8", title: "Chapter 8: Operations, Sequences & Equations", children: [
+          { id: "operations-and-sequences", title: "Operations & Sequences", children: [] },
+          { id: "multiplication-tables-and-rules", title: "Multiplication Tables & Rules", children: [] },
+          { id: "expressions-and-equations", title: "Expressions & Equations", children: [] },
+        ],
+      },
+    ],
+  },
+];
+
+export function curriculumWithPlaceholders(value: unknown, grade?: number): CurriculumNode[] {
   const configured = parseCurriculum(value ?? []);
+  const curriculum = configured.length ? configured : grade === 6 ? GRADE_SIX_CURRICULUM : configured;
   function fill(nodes: CurriculumNode[], depth: number): CurriculumNode[] {
     const { label, count } = PLACEHOLDER_LEVELS[depth];
     const cards = nodes.length ? nodes : Array.from({ length: count }, (_, index) => ({
@@ -61,7 +93,7 @@ export function curriculumWithPlaceholders(value: unknown): CurriculumNode[] {
     }));
     return cards.map(node => ({ ...node, children: depth === 2 ? [] : fill(node.children, depth + 1) }));
   }
-  return fill(configured, 0);
+  return fill(curriculum, 0);
 }
 
 export function isComplete(node: CurriculumNode, path: string[], depth: number, progress: Progress, options: CurriculumOptions): boolean {
@@ -83,7 +115,7 @@ export function curriculumView(modules: CurriculumNode[], path: string[], progre
     if (depth === 2 && options.chapterTests) {
       const chapterState = progress[path.slice(0, 2).join("/")] || {};
       chapterPassed = chapterState.testPassed === true;
-      if (!chapterPassed && !chapterState.testAttempted) throw new Error("Take the chapter test first.");
+      if (!chapterPassed && !chapterState.testAttempted) throw new Error("Take the chapter pre-test first.");
     }
     if (depth > 0 && !chapterPassed && !siblings.slice(0, index).every(node => isComplete(node, [...path.slice(0, depth), node.id], depth, progress, options))) throw new Error("Pass the previous item to unlock this page.");
     current = siblings[index];
@@ -101,9 +133,11 @@ export function curriculumView(modules: CurriculumNode[], path: string[], progre
   }));
   const activities: { id: Activity; title: string; available: boolean; complete: boolean; reason: string }[] = [];
   if (depth === 2 && options.chapterTests) {
-    const ready = !chapterPassed && (!state.testAttempted || (children.length > 0 && children.every(child => child.completed)));
-    activities.push({ id: "chapter-test", title: "Chapter test", available: ready, complete: chapterPassed,
-      reason: chapterPassed ? "Passed · the exercises remain available for optional practice" : ready ? "Pass to clear this chapter" : "Complete every exercise below before trying again" });
+    const exercisesComplete = children.length > 0 && children.every(child => child.completed);
+    activities.push({ id: "chapter-pre-test", title: "Chapter pre-test", available: !state.testAttempted, complete: state.testAttempted === true,
+      reason: state.testAttempted ? "Completed · finish every exercise to unlock the chapter post-test" : "Complete this before starting the exercises" });
+    activities.push({ id: "chapter-post-test", title: "Chapter post-test", available: state.testAttempted === true && exercisesComplete && !chapterPassed, complete: chapterPassed,
+      reason: chapterPassed ? "Passed · this chapter is complete" : !state.testAttempted ? "Complete the chapter pre-test first" : exercisesComplete ? "Ready to assess your chapter learning" : "Complete every exercise to unlock this test" });
   }
   if (depth === 3) {
     const complete = chapterPassed || isComplete(current!, path, 2, progress, options);
@@ -123,9 +157,10 @@ export function applyActivity(modules: CurriculumNode[], path: string[], progres
   const result = structuredClone(progress), key = path.join("/"), state = { ...(result[key] || {}) };
   state.revision = (state.revision || 0) + 1;
   if (!activity.startsWith("worksheet-")) delete state.activeTestSession;
-  if (activity === "chapter-test") {
+  if (activity === "chapter-pre-test") {
+    state.testAttempted = true; state.testPassed = false;
+  } else if (activity === "chapter-post-test") {
     state.testAttempted = true; state.testPassed = passed;
-    if (!passed) for (const existing of Object.keys(result)) if (existing.startsWith(key + "/")) delete result[existing];
   } else if (activity === "pre-test") {
     state.preAttempted = true; state.prePassed = passed; state.practiceRequired = !passed; state.worksheets = [];
   } else if (activity === "post-test") {

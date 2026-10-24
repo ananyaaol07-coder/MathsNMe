@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try { await requireAdmin(request); } catch { return Response.json({ error: "Admin access required." }, { status: 401 }); }
   try {
-    const docs = await serverDb().collection("ibGradeRequests").where("status", "==", "pending").limit(200).get();
+    const docs = await serverDb().collection("ibGradeRequests").orderBy("requestedAt", "desc").limit(200).get();
     return Response.json({ requests: docs.docs.map(doc => ({ id: doc.id, ...doc.data() })) }, { headers: { "Cache-Control": "no-store" } });
   } catch { return Response.json({ error: "Unable to load grade requests." }, { status: 503 }); }
 }
@@ -18,7 +18,6 @@ export async function PATCH(request: Request) {
       const existing = (await tx.get(ref)).data();
       if (!existing) throw new Error("Request not found.");
       if (existing.status === decision) return;
-      if (existing.status !== "pending") throw new Error("This request was already reviewed. Refresh the list.");
       tx.update(ref, { status: decision, reviewedBy: admin, reviewedAt: Date.now() });
     });
     return Response.json({ ok: true });

@@ -48,16 +48,18 @@
     const percentage = pick(body, [/(\d{1,3}(?:\.\d+)?)\s*%\s*(?:accuracy|correct)?/i, /accuracy\s*[:\-]?\s*(\d{1,3}(?:\.\d+)?)\s*%/i]);
     const fraction = body.match(/(\d+)\s*\/\s*(\d+)\s*(?:correct|questions?)?/i);
     const correct = pick(body, [/(\d+)\s*(?:correct answers?|correct)\b/i]) ?? (fraction ? Number(fraction[1]) : null);
-    const total = fraction ? Number(fraction[2]) : pick(body, [/(?:out of|total(?: questions?)?)\s*[:\-]?\s*(\d+)/i]);
-    if (percentage === null || correct === null || total === null || total < 1) return;
+    const performanceTotal = pick(body, [/performance stats\s*(\d+)\s*questions?/i]);
+    const total = performanceTotal ?? (fraction ? Number(fraction[2]) : pick(body, [/(?:out of|total(?: questions?)?)\s*[:\-]?\s*(\d+)/i]));
+    const derivedAccuracy = correct !== null && total !== null && total > 0 ? (correct / total) * 100 : null;
+    if ((percentage === null && derivedAccuracy === null) || correct === null || total === null || total < 1) return;
     const capturedAt = Date.now();
     const quizTitle = clean(document.querySelector("h1")?.textContent || document.title.replace(/\s*[|–-].*$/, "") || "Wayground assessment");
     const result = {
       source: "wayground-extension",
       quizTitle: quizTitle.slice(0, 180),
       capturedAt,
-      accuracy: Math.max(0, Math.min(100, Math.round(percentage))),
-      score: pick(body, [/(?:wayground\s*)?score\s*[:\-]?\s*([\d,]+)/i]),
+      accuracy: Math.max(0, Math.min(100, Math.round(percentage ?? derivedAccuracy ?? 0))),
+      score: pick(body, [/(?:wayground\s*)?score\s*[:\-]?\s*([\d,]+)/i, /([\d,]+)\s*score\b/i]),
       correct: Math.round(correct),
       incorrect: Math.max(0, Math.round(total - correct)),
       total: Math.round(total),

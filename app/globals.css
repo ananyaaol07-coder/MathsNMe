@@ -61,3 +61,26 @@ body {
   animation-duration: 5s;
   animation-delay: -2s;
 }
+
+
+@page {
+  size: A4;
+  margin: 8mm;
+}
+
+@media print {
+  body > footer,
+  body > main > header {
+    display: none !important;
+  }
+
+  #report-print-root {
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  #report-print-root .report-detail {
+    break-inside: avoid;
+  }
+}

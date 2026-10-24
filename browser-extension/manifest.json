@@ -1,21 +1,57 @@
 {
   "manifest_version": 3,
-  "name": "Maths n Me – Wayground Reports",
-  "version": "0.1.0",
+  "name": "Maths n Me \u2013 Wayground Reports",
+  "version": "0.3.0",
   "description": "Saves completed Wayground quiz results to the signed-in student's Maths n Me reports.",
-  "permissions": ["storage", "tabs"],
-  "host_permissions": ["https://*.wayground.com/*", "https://*.quizizz.com/*", "https://*.joinmyquiz.com/*", "http://localhost:3000/*"],
-  "background": { "service_worker": "service-worker.js" },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.wayground.com/*",
+    "https://*.quizizz.com/*",
+    "https://*.joinmyquiz.com/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
   "content_scripts": [
     {
-      "matches": ["https://*.wayground.com/*", "https://*.quizizz.com/*", "https://*.joinmyquiz.com/*"],
-      "js": ["content-script.js"],
+      "matches": [
+        "https://*.wayground.com/*",
+        "https://*.quizizz.com/*",
+        "https://*.joinmyquiz.com/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*"
+      ],
+      "js": [
+        "site-bridge.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "action": {
     "default_title": "Maths n Me Reports",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }
