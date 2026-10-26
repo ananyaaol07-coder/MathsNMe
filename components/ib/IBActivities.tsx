@@ -32,7 +32,7 @@ export default function IBActivities({ grade, path, items, onComplete }: { grade
       if (quizWindow) quizWindow.location.assign(item.externalUrl!);
       else window.location.assign(item.externalUrl!);
     };
-    const requestId = crypto.randomUUID();
+    const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const ready = (event: Event) => {
       const detail = (event as CustomEvent<{ requestId?: string }>).detail;
       if (detail?.requestId === requestId) openQuiz();

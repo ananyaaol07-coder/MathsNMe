@@ -1,0 +1,24 @@
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, BarChart3, Calculator, Clock3, FileText, Sparkles, Target, Trophy } from "lucide-react";
+import BrandLogo from "@/components/common/BrandLogo";
+
+const levels = [
+  ["1", "Foundation", "Number sense, complements, and quick addition", "START HERE", "8"],
+  ["2", "Fast Multiplication", "Core multiplication techniques and patterns", "LOCKED", "10"],
+  ["3", "Smart Division", "Efficient division methods and divisibility", "LOCKED", "9"],
+];
+
+export default function VedicPreviewPage() {
+  return <main className="min-h-screen bg-gradient-to-br from-white via-[#FFFDF8] to-[#FFF8EA] text-slate-900">
+    <header className="border-b border-[#e8dfc8] bg-white"><div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between px-6"><Link href="/" className="flex items-center gap-3"><BrandLogo className="w-36" /></Link><span className="flex items-center gap-2 text-sm font-bold text-slate-600"><ArrowLeft size={18}/> Dashboard</span></div></header>
+    <section className="mx-auto max-w-7xl px-6 py-10">
+      <div className="grid gap-8 lg:grid-cols-[1.35fr_.65fr]">
+        <article className="rounded-[2rem] bg-gradient-to-br from-[#302914] via-[#1e1d19] to-[#111827] p-8 text-white shadow-xl sm:p-10"><p className="flex items-center gap-2 text-xs font-black tracking-widest text-[#f5d86f]"><Calculator size={17}/> VEDIC MATHEMATICS</p><h1 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">Calculate smarter. Think faster.</h1><p className="mt-5 max-w-xl text-base leading-8 text-slate-300">Build confidence and speed through structured Vedic techniques, focused worksheets, and regular practice.</p><button className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#D4AF37] px-6 py-4 font-black text-slate-950">Take the pre-test <ArrowRight size={18}/></button></article>
+        <article className="rounded-[2rem] border border-[#eadfb9] bg-white p-8 shadow-sm"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff1b8] text-[#a27600]"><Target size={27}/></span><p className="mt-7 text-sm font-bold text-slate-500">Your placement</p><h2 className="mt-2 text-3xl font-black">Not assessed</h2><p className="mt-3 leading-7 text-slate-600">Complete the pre-test to identify the right starting level.</p><div className="mt-7 h-2 rounded-full bg-slate-100"/></article>
+      </div>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[[Trophy,"Not set","Current level","bg-[#fff1b8] text-[#ae7900]"],[FileText,"0","Worksheets done","bg-emerald-100 text-emerald-600"],[BarChart3,"—","Average accuracy","bg-purple-100 text-purple-600"],[Clock3,"0 min","Practice time","bg-blue-100 text-blue-600"]].map(([Icon,value,label,color]: any)=><article key={label} className="rounded-2xl border border-[#e8dfc8] bg-white p-6 shadow-sm"><span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color}`}><Icon size={23}/></span><p className="mt-6 text-3xl font-black">{value}</p><p className="mt-1 font-semibold text-slate-500">{label}</p></article>)}</div>
+      <div className="mt-11"><p className="text-sm font-black text-[#B8860B]">YOUR ROADMAP</p><h2 className="mt-1 text-3xl font-black">Vedic Maths levels</h2><p className="mt-2 text-slate-500">Progress one level at a time</p><div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">{levels.map(([number,title,description,state,worksheets]) => { const active = number === "1"; return <article key={number} className={`rounded-3xl border p-6 ${active ? "border-[#e2cf91] bg-white shadow-sm" : "border-slate-200 bg-white/65 text-slate-400"}`}><div className="flex items-start justify-between"><span className={`flex h-11 w-11 items-center justify-center rounded-2xl font-black ${active ? "bg-[#fff1b8] text-[#9a7200]" : "bg-slate-100 text-slate-400"}`}>{number}</span>{active ? <a href="/vedic-preview/level/1" className="rounded-full bg-[#fff1b8] px-3 py-1 text-xs font-black text-[#8a6500]">START HERE</a> : <span className="text-slate-400">🔒</span>}</div><h3 className={`mt-5 text-xl font-black ${active ? "text-slate-950" : "text-slate-700"}`}>{title}</h3><p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">{description}</p><div className="mt-5 flex items-center justify-between border-t border-[#eee7d5] pt-4 text-sm font-bold"><span>{worksheets} worksheets</span>{active && <a href="/vedic-preview/level/1" className="text-[#9a7200]">▶ Open level</a>}</div></article> })}</div></div>
+      <article className="mt-10 rounded-3xl border border-[#eadfb9] bg-white p-7"><Sparkles className="text-[#B8860B]" size={22}/><h2 className="mt-3 text-xl font-black">Recent worksheets</h2><p className="mt-3 text-sm leading-6 text-slate-600">Your completed and active Vedic Maths worksheets will appear here after you begin your first level.</p></article>
+    </section>
+  </main>;
+}

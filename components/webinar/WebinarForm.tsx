@@ -8,6 +8,7 @@ type Availability = { time: string; status: "available" | "booked" | "past" | "c
 
 const field = "mt-2 block w-full rounded-xl border border-[#e5dcc5] bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-[#B8860B] focus:ring-2 focus:ring-[#D4AF37]/20 disabled:bg-slate-100 disabled:text-slate-500";
 const label = "block text-sm font-semibold text-slate-700";
+const newRequestId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 export default function WebinarForm() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -25,7 +26,7 @@ export default function WebinarForm() {
   const [requestId, setRequestId] = useState("");
   useEffect(() => {
     const tick = () => { setToday(indiaDate()); };
-    const initial = setTimeout(() => { tick(); setRequestId(crypto.randomUUID()); }, 0);
+    const initial = setTimeout(() => { tick(); setRequestId(newRequestId()); }, 0);
     const timer = setInterval(tick, 10000);
     return () => { clearTimeout(initial); clearInterval(timer); };
   }, []);

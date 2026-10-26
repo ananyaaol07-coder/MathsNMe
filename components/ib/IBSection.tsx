@@ -18,7 +18,7 @@ type View = {
 };
 type ExerciseResources = { notes: string; notesUrl: string; videoUrl: string };
 const base = "/topics/ib-mathematics";
-export default function IBSection({ path = [] }: { path?: string[] }) {
+export default function IBSection({ path = [], preview = false }: { path?: string[]; preview?: boolean }) {
   const key = path.join("/");
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
@@ -39,6 +39,14 @@ export default function IBSection({ path = [] }: { path?: string[] }) {
     finally { setLoading(false); }
   }, [key]);
   useEffect(() => {
+    if (preview) {
+      setView({ registeredGrade: 7, grades: Array.from({ length: 10 }, (_, index) => {
+        const grade = index + 3;
+        return { grade, own: grade === 7, previous: grade === 6, automatic: grade === 6 || grade === 7, accessible: grade === 6 || grade === 7 || grade === 9, status: grade === 3 ? "rejected" : null };
+      }) });
+      setLoading(false);
+      return;
+    }
     const first = setTimeout(() => { setLoading(true); void load(); }, 0);
     const timer = setInterval(() => { void load(); }, 30000);
     return () => { clearTimeout(first); clearInterval(timer); };
